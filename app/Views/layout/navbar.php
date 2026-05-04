@@ -1,0 +1,32 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm mb-4">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="/assets/logo/logo_sciclo.png" alt="Logo Sciclo" height="40" class="me-2">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/">Início</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#sobre">Sobre</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#contato">Contato</a>
+        </li>
+        <li class="nav-item ms-2">
+          <a class="nav-link d-flex align-items-center px-3 py-1 border border-2 border-secondary rounded-pill text-secondary" href="/login" title="Login" style="gap: 0.5rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+              <path d="M2 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H2z"/>
+            </svg>
+            <span>Login</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
