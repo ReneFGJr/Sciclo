@@ -1,5 +1,3 @@
-
-
 body {
     background-color: #f8f9fa;
     font-family: "Roboto Condensed", sans-serif;
@@ -9,6 +7,15 @@ body {
     background-color: #013458;
     color: #fff;
 }
+
+.bg-background {
+  background-image: url('/assets/background/background-repository.png');
+  background-size: auto 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
 .navbar-brand span {
     color: #0d6efd;
     font-size: 1.5rem;

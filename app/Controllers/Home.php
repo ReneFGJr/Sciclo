@@ -6,6 +6,8 @@ class Home extends BaseController
 {
     public function index(): string
     {
-        return view('welcome_message');
+        $Seals = new \App\Models\seal\SealModel();
+        $data['seals'] = $Seals->findAll();
+        return view('welcome_message', $data);
     }
 }

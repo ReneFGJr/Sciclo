@@ -9,7 +9,8 @@ class Auth extends Controller
     public function login()
     {
         helper(['form']);
-        if ($this->request->getMethod() === 'post') {
+        $method = strtolower($this->request->getMethod());
+        if ($method === 'post') {
             $email = $this->request->getPost('email');
             $password = $this->request->getPost('password');
             $userModel = new UserModel();
