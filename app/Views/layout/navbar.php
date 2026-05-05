@@ -9,7 +9,7 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/">Início</a>
+          <a class="nav-link active" aria-current="page" href="<?= base_url(); ?>">Início</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#sobre">Sobre</a>
@@ -18,7 +18,7 @@
           <a class="nav-link" href="#contato">Contato</a>
         </li>
         <li class="nav-item ms-2">
-          <a class="nav-link d-flex align-items-center px-3 py-1 border border-2 border-secondary rounded-pill text-secondary" href="/login" title="Login" style="gap: 0.5rem;">
+          <a class="nav-link d-flex align-items-center px-3 py-1 border border-2 border-secondary rounded-pill text-secondary" href="<?= base_url(); ?>/login" title="Login" style="gap: 0.5rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
               <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
               <path d="M2 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H2z"/>
