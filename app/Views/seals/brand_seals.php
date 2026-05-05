@@ -8,7 +8,7 @@
             <?php foreach ($seals as $seal): ?>
                 <div class="col-md-4 col-lg-2">
                     <div class="card h-100 border-0 shadow-sm text-center">
-                        <img src="<?= esc($seal['image']) ?>" class="card-img-top" alt="<?= esc($seal['name']) ?>" style="width: 100%; height: auto; padding: 0; margin: 0;">
+                        <img src="<?= esc(base_url($seal['image'])) ?>" class="card-img-top" alt="<?= esc($seal['name']) ?>" style="width: 100%; height: auto; padding: 0; margin: 0;">
                         <div class="card-body">
                             <h5 class="card-title mb-2"><?= esc($seal['name']) ?></h5>
                             <p class="card-text small text-muted"><?= esc($seal['description']) ?></p>
