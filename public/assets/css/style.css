@@ -12,7 +12,7 @@ body {
 }
 
 .bg-background {
-  background-image: url('/assets/background/background-repository.png');
+  background-image: url('https://cip.brapci.inf.br/sciclo/assets/background/background-repository.png');
   background-size: auto 100%;
   background-position: center;
   background-repeat: no-repeat;

@@ -3,7 +3,7 @@
         <img src="<?= base_url(); ?>/assets/logo/logo_sciclo.png" alt="Logo Sciclo" class="mb-4" style="max-width: 440px;">
         <h1 class="display-4 fw-bold mb-3">Certificação de Repositórios Confiáveil</h1>
         <p class="lead mb-4">Promovendo interoperabilidade, transparência e sustentabilidade na comunicação científica.</p>
-        <a href="#portfolio" class="btn btn-light btn-lg px-4 me-2">Sobre a certificação</a>
-        <a href="#contato" class="btn btn-outline-light btn-lg px-4">Fale Conosco</a>
+        <a href="<?= base_url(); ?>/about/certification" class="btn btn-light btn-lg px-4 me-2">Sobre a certificação</a>
+        <a href="<?= base_url(); ?>/contact" class="btn btn-outline-light btn-lg px-4">Fale Conosco</a>
     </div>
 </section>

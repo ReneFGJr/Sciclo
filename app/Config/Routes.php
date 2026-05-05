@@ -1,3 +1,4 @@
+
 <?php
 
 use CodeIgniter\Router\RouteCollection;
@@ -12,3 +13,7 @@ $routes->match(['get', 'post'], 'forgot', 'Auth::forgot');
 $routes->get('logout', 'Auth::logout');
 $routes->match(['get', 'post'], 'application', 'Application::index');
 $routes->get('seal-statistics', 'SealStatistics::index');
+$routes->get('about', 'About::about_project');
+$routes->get('about/certification', 'About::certification');
+
+$routes->match(['get', 'post'], 'contact', 'About::contact');
