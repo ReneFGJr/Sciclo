@@ -32,6 +32,16 @@
             <span>Login</span>
           </a>
         </li>
+        <?php if (session('logged_in')): ?>
+        <li class="nav-item dropdown ms-2">
+          <a class="nav-link dropdown-toggle border border-2 border-primary rounded-pill px-3 py-1 text-primary" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Administrador
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
+            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
+          </ul>
+        </li>
+        <?php endif; ?>
       </ul>
     </div>
   </div>

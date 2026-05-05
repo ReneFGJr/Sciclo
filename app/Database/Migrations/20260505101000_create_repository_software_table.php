@@ -26,6 +26,12 @@ class CreateRepositorySoftwareTable extends Migration
         ]);
         $this->forge->addKey('id', true);
         $this->forge->createTable('repository_software');
+
+        // Seed para softwares de repositório
+        $seeder = \Config\Database::seeder();
+        $seeder->call('UserSeeder');
+        $seeder->call('RepositorySoftwareSeeder');
+        $seeder->call('SealSeeder');
     }
 
     public function down()

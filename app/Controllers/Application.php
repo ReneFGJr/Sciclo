@@ -8,8 +8,8 @@ class Application extends Controller
     public function index()
     {
         $repoLink = $this->request->getPost('repo_link');
-        $method = strtolower($this->request->getMethod());
 
+        $method = strtolower($this->request->getMethod());
         if ($method === 'post' && $repoLink) {
             $this->streamHarvesting($repoLink);
             exit;
@@ -29,8 +29,36 @@ class Application extends Controller
         }
     }
 
+    public function form($c1=0,$c2=0,$c3=0)
+    {
+        $data = [];
+        $question = new \App\Models\Question\CertificacaoQuestoesModel();
+        $data['questions'] = $question->where('nivel1', $c1)->findAll();
+        return view('application/application_questionnaire',$data);
+    }
+
+    public function selectQuestionnaire($id)
+    {
+        $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
+        $data['repo'] = $OAI->find($id);
+
+        $method = strtolower($this->request->getMethod());
+
+        if ($method === 'post') {
+            $questionnaireId = $this->request->getPost('questionnaire_id');
+            // Salvar RepoID na sessão
+            session()->set('repo_id', $id);
+            return redirect()->to(base_url('application/form/1'));
+        }
+        return view('application/application_select_questionnaire', $data);
+    }
+
     private function streamHarvesting(string $repoLink): void
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session();
+        }
+
         $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
         $RepoID = $OAI->saveURL($repoLink);
 
@@ -43,8 +71,6 @@ class Application extends Controller
         while (ob_get_level() > 0) {
             ob_end_flush();
         }
-
-        ob_implicit_flush(true);
 
         echo view('layout/header');
         echo view('layout/navbar');
@@ -85,8 +111,12 @@ class Application extends Controller
                 case 6:
                     echo 'Finalizando processo...';
                     break;
+                case 9:
+                    echo '<a href="' . base_url('application/form/select/' . $RepoID) . '" class="btn btn-primary mt-3">Responder questionário de certificação</a>';
+                    break;
                 default:
-                    echo 'Aguardando próxima etapa...';
+                    echo 'Processo em andamento...';
+                    break;
             }
             echo '</p>';
             @ob_flush();
