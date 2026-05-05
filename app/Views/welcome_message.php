@@ -10,6 +10,6 @@ echo view('layout/navbar');
 
 <?php echo view('seals/seal_avaliation'); ?>
 
-<?php echo view('seals/seal_statistics'); ?>
+<?php echo view('seals/seal_statistics', ['totalRepositorios' => $totalRepositorios]); ?>
 
 <?php echo view('layout/footer'); ?>
