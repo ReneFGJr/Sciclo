@@ -23,6 +23,7 @@
         <li class="nav-item">
           <a class="nav-link" href="<?= base_url(); ?>/contact">Contato</a>
         </li>
+        <?php if (!session('logged_in')): ?>
         <li class="nav-item ms-2">
           <a class="nav-link d-flex align-items-center px-3 py-1 border border-2 border-secondary rounded-pill text-secondary" href="<?= base_url(); ?>/login" title="Login" style="gap: 0.5rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
@@ -32,6 +33,7 @@
             <span>Login</span>
           </a>
         </li>
+        <?php endif; ?>
         <?php if (session('logged_in')): ?>
         <li class="nav-item dropdown ms-2">
           <a class="nav-link dropdown-toggle border border-2 border-primary rounded-pill px-3 py-1 text-primary" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
