@@ -18,6 +18,17 @@ class Application extends Controller
         return view('application/application_form', ['repo_link' => $repoLink]);
     }
 
+    private function message(array $rsp): void
+    {
+        echo view('components/message', ['status' => $rsp['status'], 'message' => $rsp['message']]);
+        @ob_flush();
+        if ($rsp['status'] != '200') {
+            echo view('layout/footer');
+            flush();
+            exit;
+        }
+    }
+
     private function streamHarvesting(string $repoLink): void
     {
         $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
@@ -52,11 +63,12 @@ class Application extends Controller
             echo '<p>Processando o repositório... (Passo ' . ($i + 1) . ' de 10) -';
             switch ($i) {
                 case 0:
-                    echo 'Identificando o repositório (' . $RepoID . ') - <b>' . esc($repoLink) . '</b>...';
-                    echo $OAI->getIdentify($repoLink);
+                    echo 'Validando a URL (' . $RepoID . ') - <b>' . esc($repoLink) . '</b>...';
+                    echo $this->message($OAI->validURL($repoLink));
                     break;
                 case 1:
-                    echo 'Coletando metadados...';
+                    echo 'Identificando OAI-PMH do repositório...';
+                    echo $this->message($OAI->getIdentifyOAI($RepoID));
                     break;
                 case 2:
                     echo 'Validando dados...';

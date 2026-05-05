@@ -6,16 +6,54 @@ use SimpleXMLElement;
 use Throwable;
 
 class OaiPmhModel extends Model
+
+    /**
+     * Retorna o total de repositórios avaliados (registros na tabela oai_pmh).
+     * @return int
+     */
+    public function totalRepositoriosAvaliados()
+    {
+        return $this->countAllResults();
+    }
 {
     protected $table = 'oai_pmh';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['base_url', 'repository_name', 'protocol_version', 'admin_email', 'earliest_datestamp', 'deleted_record', 'granularity', 'compression', 'raw_identify_xml', 'created_at', 'updated_at'];
+    protected $allowedFields = ['base_url', 'base_url_oai', 'repository_name', 'protocol_version', 'admin_email', 'earliest_datestamp', 'deleted_record', 'granularity', 'compression', 'raw_identify_xml', 'created_at', 'updated_at'];
     public $timestamps = false;
 
     function validURL($url)
     {
         $url = trim((string) $url);
-        return $url !== '' && filter_var($url, FILTER_VALIDATE_URL);
+        $RSP = ['status' => '200', 'message' => 'URL válida.'];
+
+         if ($url === '') {
+            $RSP['status'] = '500';
+            $RSP['message'] = 'A URL não pode ser vazia.';
+            return $RSP;
+        }
+            if (! filter_var($url, FILTER_VALIDATE_URL)) {
+                $RSP['status'] = '500';
+                $RSP['message'] = 'A URL fornecida é inválida.';
+                return $RSP;
+            }
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($curl);
+            curl_close($curl);
+            if ($curlError) {
+                $RSP['status'] = '500';
+                $RSP['message'] = 'Erro ao acessar a URL: ' . $curlError;
+                return $RSP;
+            }
+        return $RSP;
     }
 
     /**********************************************************************************************************  */
@@ -58,129 +96,65 @@ class OaiPmhModel extends Model
         return $this->getInsertID();
     }
 
-    function getIdentify($baseUrl)
+    function validURLOAI($url)
     {
-        $baseUrl = trim((string) $baseUrl);
-
-        if ($baseUrl === '' || ! filter_var($baseUrl, FILTER_VALIDATE_URL)) {
-            return ' URL invalida.';
+        $url = trim((string) $url);
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+        if ($curlError) {
+            return ['status' => '500', 'message' => 'Erro ao acessar a URL: ' . $curlError];
         }
+        if ($httpCode >= 400) {
+            return ['status' => '500', 'message' => 'Resposta HTTP ' . $httpCode];
+        }
+        return ['status' => '200', 'message' => 'Resposta HTTP ' . $httpCode];
+    }
 
-        try {
-            $client = service('curlrequest', [
-                'timeout' => 30,
-                'http_errors' => false,
-            ]);
-            $sslFallbackUsed = false;
-
-            try {
-                $response = $client->request('GET', $baseUrl, [
-                    'query' => ['verb' => 'Identify'],
-                ]);
-            } catch (Throwable $requestError) {
-                $requestErrorMessage = $requestError->getMessage();
-                $isSslCertError = str_contains($requestErrorMessage, 'SSL certificate problem')
-                    || str_contains($requestErrorMessage, 'cURL error 60');
-
-                if (! $isSslCertError) {
-                    throw $requestError;
+    function getIdentifyOAI($idRepo)
+    {
+        $data = $this->find($idRepo);
+        if ($data['base_url_oai'] == '')
+            {
+                $baseUrl = trim($data['base_url']);
+                if (substr($baseUrl, -1) != '/') {
+                    $baseUrl .= '/';
                 }
 
-                // Fallback para ambiente local com cadeia de certificado incompleta.
-                $response = $client->request('GET', $baseUrl, [
-                    'query' => ['verb' => 'Identify'],
-                    'verify' => false,
-                ]);
-                $sslFallbackUsed = true;
-            }
-
-            $statusCode = $response->getStatusCode();
-            $xmlBody = (string) $response->getBody();
-
-            if ($statusCode >= 400) {
-                return ' falha HTTP ' . $statusCode . ' no Identify.';
-            }
-
-            if ($xmlBody === '') {
-                return ' resposta vazia no Identify.';
-            }
-
-            libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($xmlBody);
-
-            if (! ($xml instanceof SimpleXMLElement)) {
-                return ' XML invalido no Identify.';
-            }
-
-            $identifyNodes = $xml->xpath('//*[local-name()="Identify"]');
-            if (empty($identifyNodes) || ! ($identifyNodes[0] instanceof SimpleXMLElement)) {
-                return ' elemento Identify nao encontrado.';
-            }
-
-            $identify = $identifyNodes[0];
-
-            $adminEmails = $identify->xpath('./*[local-name()="adminEmail"]');
-            $compressions = $identify->xpath('./*[local-name()="compression"]');
-
-            $adminEmailValues = [];
-            if (is_array($adminEmails)) {
-                foreach ($adminEmails as $emailNode) {
-                    $value = trim((string) $emailNode);
-                    if ($value !== '') {
-                        $adminEmailValues[] = $value;
+                /***************************************************  */
+                $sufix = ["oai", "oai-pmh", "oai/request", "oai-pmh/request", "xmlui/oai/request", "xmlui/oai-pmh/request"];
+                foreach ($sufix as $suf) {
+                    // Garante que haja uma barra entre baseUrl e o sufixo
+                    $testUrl = $baseUrl . ltrim($suf, '/').'?verb=Identify';
+                    echo '<h5>' . $suf . ' - ' . $testUrl . '</h5>';
+                    echo '<h5>'.$baseUrl.'</h5>';
+                    if ($this->validURL($testUrl)) {
+                        $dt = $this->validURLOAI($testUrl);
+                        echo view('components/message', ['status' => $dt['status'], 'message' => $testUrl . ' - ' . $dt['message']]);
+                        if ($dt['status'] == '200') {
+                            $baseUrl = $testUrl;
+                            break;
+                        }
+                        //$baseUrl = $testUrl;
                     }
                 }
-            }
 
-            $compressionValues = [];
-            if (is_array($compressions)) {
-                foreach ($compressions as $compressionNode) {
-                    $value = trim((string) $compressionNode);
-                    if ($value !== '') {
-                        $compressionValues[] = $value;
-                    }
+                if ($dt['status'] != '200') {
+                    return ['status' => '500', 'message' => 'Não foi possível identificar um endpoint OAI-PMH válido.'];
                 }
-            }
-
-            $repositoryNameNodes = $identify->xpath('./*[local-name()="repositoryName"]');
-            $protocolVersionNodes = $identify->xpath('./*[local-name()="protocolVersion"]');
-            $earliestDatestampNodes = $identify->xpath('./*[local-name()="earliestDatestamp"]');
-            $deletedRecordNodes = $identify->xpath('./*[local-name()="deletedRecord"]');
-            $granularityNodes = $identify->xpath('./*[local-name()="granularity"]');
-
-            $existing = $this->where('base_url', $baseUrl)->first();
-
-            if (empty($existing)) {
-                $this->insert([
-                    'base_url' => $baseUrl,
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
-                $recordId = (int) $this->getInsertID();
+                $this->update($idRepo, ['base_url_oai' => $baseUrl]);
+                return ['status' => '200', 'message' => 'Endpoint OAI-PMH identificado: ' . $baseUrl];
             } else {
-                $recordId = (int) $existing['id'];
+                return ['status' => '200', 'message' => 'Endpoint OAI-PMH já identificado: ' . $data['base_url_oai']];
             }
-
-            $data = [
-                'repository_name' => isset($repositoryNameNodes[0]) ? trim((string) $repositoryNameNodes[0]) : null,
-                'protocol_version' => isset($protocolVersionNodes[0]) ? trim((string) $protocolVersionNodes[0]) : null,
-                'admin_email' => empty($adminEmailValues) ? null : implode(';', $adminEmailValues),
-                'earliest_datestamp' => isset($earliestDatestampNodes[0]) ? trim((string) $earliestDatestampNodes[0]) : null,
-                'deleted_record' => isset($deletedRecordNodes[0]) ? trim((string) $deletedRecordNodes[0]) : null,
-                'granularity' => isset($granularityNodes[0]) ? trim((string) $granularityNodes[0]) : null,
-                'compression' => empty($compressionValues) ? null : implode(';', $compressionValues),
-                'raw_identify_xml' => $xmlBody,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ];
-
-            $this->update($recordId, $data);
-
-            if ($sslFallbackUsed) {
-                return ' Identify salvo com sucesso (SSL sem validacao, ajuste o CA no servidor).';
-            }
-
-            return ' Identify salvo com sucesso.';
-        } catch (Throwable $e) {
-            return ' erro no Identify: ' . $e->getMessage();
-        }
     }
 }
