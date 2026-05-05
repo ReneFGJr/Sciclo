@@ -23,4 +23,6 @@ O projeto Sciclo é um sistema de certificação para repositórios digitais que
 
 
 # Instalação
+ git clone ..
+ sudo chmod -R 775 /data/Sciclo/writable
  php .\spark migrate
