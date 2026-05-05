@@ -1,0 +1,128 @@
+<?php
+namespace App\Database\Seeds;
+
+use CodeIgniter\Database\Seeder;
+
+class CertificacaoQuestoesSeeder extends Seeder
+{
+    public function run()
+    {
+        $data = [
+            [
+                'id' => 1,
+                'criterio' => '1',
+                'nivel1' => '1',
+                'nivel2' => '',
+                'nivel3' => '',
+                'questao' => 'Infraestrutura organizacional',
+                'tipo_resposta' => 'INFO',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 2,
+                'criterio' => '2',
+                'nivel1' => '2',
+                'nivel2' => '',
+                'nivel3' => '',
+                'questao' => 'Organização da informação',
+                'tipo_resposta' => 'INFO',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 3,
+                'criterio' => '3',
+                'nivel1' => '3',
+                'nivel2' => '',
+                'nivel3' => '',
+                'questao' => 'Segurança da informação',
+                'tipo_resposta' => 'INFO',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 4,
+                'criterio' => '3.1',
+                'nivel1' => '3',
+                'nivel2' => '1',
+                'nivel3' => '',
+                'questao' => 'Infraestrutura técnica',
+                'tipo_resposta' => 'INFO',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 5,
+                'criterio' => '3.1.1',
+                'nivel1' => '3',
+                'nivel2' => '1',
+                'nivel3' => '1',
+                'questao' => 'Existência de backup em outra localidade física em função de incêndios e inundações',
+                'tipo_resposta' => 'SN',
+                'descricao' => 'Informe se há cópias de segurança (backup) armazenadas em uma localidade física distinta da infraestrutura principal, visando a proteção dos dados em casos de desastres como incêndios, inundações ou outros eventos que possam comprometer o ambiente original. Descreva o local, a periodicidade da replicação e os mecanismos utilizados para garantir a integridade e a disponibilidade dessas cópias.',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 6,
+                'criterio' => '3.1.2',
+                'nivel1' => '3',
+                'nivel2' => '1',
+                'nivel3' => '2',
+                'questao' => 'Existe um conceito adequado de backup de dados. Todos os dados e documentos são salvos regularmente em um procedimento de backup adequado',
+                'tipo_resposta' => 'SN',
+                'descricao' => 'Existe uma política formal de backup de dados, na qual todos os dados e documentos são copiados e armazenados regularmente por meio de procedimentos definidos. O processo contempla periodicidade estabelecida, mecanismos de verificação de integridade, controle de versões e práticas que garantem a recuperação segura das informações em caso de falhas ou perda de dados.',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 7,
+                'criterio' => '3',
+                'nivel1' => '3',
+                'nivel2' => '2',
+                'nivel3' => '',
+                'questao' => 'Plano de preservação',
+                'tipo_resposta' => 'INFO',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+            [
+                'id' => 8,
+                'criterio' => '3.2.1',
+                'nivel1' => '3',
+                'nivel2' => '2',
+                'nivel3' => '1',
+                'questao' => 'Existência de um plano estratégico baseado na missão estabelecida da organização e em seus valores, visão e objetivos definidos, abrangendo período de tempo determinado',
+                'tipo_resposta' => 'SN',
+                'descricao' => '',
+                'icone' => '',
+                'imagem' => '',
+                'condicional_1' => 0,
+                'condicional_2' => 0,
+            ],
+        ];
+
+        // Insert data
+        $this->db->table('certificacao_questoes')->insertBatch($data);
+    }
+}
