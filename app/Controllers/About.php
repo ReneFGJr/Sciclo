@@ -5,7 +5,6 @@ namespace App\Controllers;
 use CodeIgniter\Controller;
 
 class About extends Controller
-
 {
     public function about_project()
     {
@@ -24,4 +23,10 @@ class About extends Controller
         return view('about/certification', $data);
     }
 
+    public function faq()
+    {
+        $model = new \App\Models\FaqQuestionModel();
+        $data['faqs'] = $model->findAll();
+        return view('about/faq', $data);
+    }
 }

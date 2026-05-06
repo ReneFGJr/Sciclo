@@ -11,9 +11,12 @@ $routes->match(['get', 'post'], 'register', 'Auth::register');
 $routes->match(['get', 'post'], 'forgot', 'Auth::forgot');
 $routes->get('logout', 'Auth::logout');
 $routes->get('seal-statistics', 'SealStatistics::index');
-$routes->get('about', 'About::about_project');
-$routes->get('about/certification', 'About::certification');
-
+$routes->group('about', function ($routes) {
+    $routes->get('/', 'About::about_project');
+    $routes->get('certification', 'About::certification');
+    $routes->get('faq', 'About::faq');
+    $routes->get('contact', 'About::contact');
+});
 
 $routes->group('application', function($routes) {
     $routes->match(['get', 'post'], '/', 'Application::index');
@@ -29,6 +32,10 @@ $routes->group('admin', function ($routes) {
     $routes->match(['get', 'post'], 'questions/add', 'Admin\\Questions::add');
     $routes->get('questions/delete/(:num)', 'Admin\\Questions::delete/$1');
     $routes->match(['get', 'post'], 'questions/edit/(:num)', 'Admin\\Questions::edit/$1');
+    $routes->get('faq', 'Admin\\Faq::index');
+    $routes->match(['get', 'post'], 'faq/create', 'Admin\\Faq::create');
+    $routes->get('faq/delete/(:num)', 'Admin\\Faq::delete/$1');
+    $routes->match(['get', 'post'], 'faq/edit/(:num)', 'Admin\\Faq::edit/$1');
 });
 
 $routes->match(['get', 'post'], 'contact', 'About::contact');

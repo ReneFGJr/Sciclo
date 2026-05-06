@@ -18,6 +18,7 @@
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownSobre">
             <li><a class="dropdown-item" href="<?= base_url(); ?>/about">Sobre nós</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/about/certification">Sobre a certificação</a></li>
+            <li><a class="dropdown-item" href="<?= base_url(); ?>/about/faq">FAQ</a></li>
           </ul>
         </li>
         <li class="nav-item">
@@ -41,6 +42,7 @@
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
+            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/faq">Editar FAQ</a></li>
           </ul>
         </li>
         <?php endif; ?>
