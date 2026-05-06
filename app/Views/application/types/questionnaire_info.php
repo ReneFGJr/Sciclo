@@ -14,5 +14,3 @@
         <?php endif; ?>
     </div>
 </div>
-
-<?php pre($q, false); ?>
