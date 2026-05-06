@@ -14,28 +14,20 @@ echo view('layout/navbar');
   <form method="post" action="<?= base_url('application/submit_questionnaire') ?>">
     <?php if (!empty($questions)): ?>
       <?php foreach ($questions as $q): ?>
-        <div class="card mb-3">
-          <div class="card-body">
-            <h5 class="card-title">Questão #<?= esc($q['id']) ?></h5>
-            <p class="card-text mb-2"><?= esc($q['descricao']) ?></p>
-            <?php if (!empty($q['alternativas'])): ?>
-              <?php foreach ($q['alternativas'] as $alt): ?>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="questao_<?= esc($q['id']) ?>" id="alt_<?= esc($q['id']) ?>_<?= esc($alt['id']) ?>" value="<?= esc($alt['id']) ?>">
-                  <label class="form-check-label" for="alt_<?= esc($q['id']) ?>_<?= esc($alt['questao']) ?>">
-                    <?= esc($alt['texto']) ?>
-                  </label>
-                </div>
-              <?php endforeach; ?>
-            <?php endif; ?>
-            <?php if (!empty($q['condicional_1'])): ?>
-              <div class="mt-2 alert alert-info p-2 small">Condicional 1: <?= esc($q['condicional_1']) ?></div>
-            <?php endif; ?>
-            <?php if (!empty($q['condicional_2'])): ?>
-              <div class="mt-2 alert alert-info p-2 small">Condicional 2: <?= esc($q['condicional_2']) ?></div>
-            <?php endif; ?>
-          </div>
-        </div>
+        <?php
+        echo '<h1>'.$q['tipo_resposta'].'</h1>';
+        switch ($q['tipo_resposta']) {
+          case 'INFO':
+            echo view('application/types/questionnaire_info', ['q' => $q]);
+            break;
+          case 'SN':
+            echo view('application/types/questionnaire_sn', ['q' => $q]);
+            break;
+          default:
+            echo view('application/types/questionnaire_default', ['q' => $q]);
+            break;
+        }
+        ?>
       <?php endforeach; ?>
       <button type="submit" class="btn btn-primary">Enviar respostas</button>
     <?php else: ?>

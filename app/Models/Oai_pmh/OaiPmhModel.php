@@ -9,7 +9,21 @@ class OaiPmhModel extends Model
 {
     protected $table = 'oai_pmh';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['base_url', 'status', 'base_url_oai', 'repository_name', 'protocol_version', 'admin_email', 'earliest_datestamp', 'deleted_record', 'granularity', 'compression', 'raw_identify_xml', 'created_at', 'updated_at'];
+    protected $allowedFields = [
+                'base_url',
+                'status',
+                'repository_type',
+                'base_url_oai',
+                'repository_name',
+                'protocol_version',
+                'admin_email',
+                'earliest_datestamp',
+                'deleted_record',
+                'granularity',
+                'compression',
+                'raw_identify_xml',
+                'created_at',
+                'updated_at'];
     public $timestamps = false;
 
     /**

@@ -34,6 +34,7 @@ class Application extends Controller
         $data = [];
         $question = new \App\Models\Question\CertificacaoQuestoesModel();
         $data['questions'] = $question->where('nivel1', $c1)->findAll();
+
         return view('application/application_questionnaire',$data);
     }
 
@@ -45,9 +46,12 @@ class Application extends Controller
         $method = strtolower($this->request->getMethod());
 
         if ($method === 'post') {
-            $questionnaireId = $this->request->getPost('questionnaire_id');
+            $OaiPmhModel = new \App\Models\Oai_pmh\OaiPmhModel();
+            $OaiPmhModel->update($id, ['repository_type' => $this->request->getPost('questionario')]);
+
             // Salvar RepoID na sessão
             session()->set('repo_id', $id);
+
             return redirect()->to(base_url('application/form/1'));
         }
         return view('application/application_select_questionnaire', $data);
