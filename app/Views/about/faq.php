@@ -16,7 +16,7 @@
                     </h2>
                     <div id="collapse<?= $i ?>" class="accordion-collapse collapse <?= $i === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $i ?>" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
-                            <?= str_replace("\n", "<br><br>", esc($faq['answer'])) ?>
+                            <?= str_replace("\n", "<br>", esc($faq['answer'])) ?>
                         </div>
                     </div>
                 </div>
