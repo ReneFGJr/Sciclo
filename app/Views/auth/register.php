@@ -21,7 +21,7 @@
           <button type="submit" class="btn btn-success w-100">Cadastrar</button>
         </form>
         <div class="mt-3 text-center">
-          <a href="/login" class="small">Já tem conta? Entrar</a>
+          <a href="<?= base_url(); ?>/login" class="small">Já tem conta? Entrar</a>
         </div>
       </div>
     </div>

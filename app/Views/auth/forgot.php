@@ -12,7 +12,7 @@
           <button type="submit" class="btn btn-warning w-100">Enviar link de recuperação</button>
         </form>
         <div class="mt-3 text-center">
-          <a href="/login" class="small">Voltar ao login</a>
+          <a href="<?= base_url() ?>/login" class="small">Voltar ao login</a>
         </div>
       </div>
     </div>
