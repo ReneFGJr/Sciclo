@@ -31,11 +31,77 @@ class Application extends Controller
 
     public function form($c1=0,$c2=0,$c3=0)
     {
-        $data = [];
-        $question = new \App\Models\Question\CertificacaoQuestoesModel();
-        $data['questions'] = $question->where('nivel1', $c1)->findAll();
+        $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
+        $answerModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
 
-        return view('application/application_questionnaire',$data);
+        $axisRows = $questionModel
+            ->select('nivel1, criterio, questao')
+            ->where('nivel2', '')
+            ->findAll();
+
+        $axesMap = [];
+        foreach ($axisRows as $row) {
+            $axisKey = trim((string) ($row['nivel1'] ?? ''));
+            if ($axisKey === '') {
+                continue;
+            }
+
+            if (! isset($axesMap[$axisKey])) {
+                $axesMap[$axisKey] = [
+                    'eixo' => $axisKey,
+                    'criterio' => (string) ($row['criterio'] ?? ''),
+                    'titulo' => (string) ($row['questao'] ?? ''),
+                ];
+            }
+        }
+
+        $axes = array_values($axesMap);
+        usort($axes, static fn (array $a, array $b): int => strnatcmp((string) $a['eixo'], (string) $b['eixo']));
+
+        if ((int) $c1 <= 0 && ! empty($axes)) {
+            $c1 = (int) $axes[0]['eixo'];
+        }
+
+        $questions = $questionModel->where('nivel1', (string) $c1)->findAll();
+        usort($questions, static function (array $a, array $b): int {
+            foreach (['criterio', 'nivel1', 'nivel2', 'nivel3'] as $field) {
+                $cmp = strnatcmp((string) ($a[$field] ?? ''), (string) ($b[$field] ?? ''));
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+            }
+
+            return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+        });
+
+        $savedAnswers = [];
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId > 0) {
+            $answers = $answerModel->where('oai_pmh_id', $repoId)->findAll();
+            foreach ($answers as $answer) {
+                $savedAnswers[(int) $answer['questao_id']] = (string) $answer['resposta'];
+            }
+        }
+
+        $nextAxis = null;
+        $currentAxis = (string) $c1;
+        $totalAxes = count($axes);
+        for ($i = 0; $i < $totalAxes; $i++) {
+            if ((string) $axes[$i]['eixo'] === $currentAxis) {
+                if (isset($axes[$i + 1])) {
+                    $nextAxis = (string) $axes[$i + 1]['eixo'];
+                }
+                break;
+            }
+        }
+
+        return view('application/application_questionnaire', [
+            'questions' => $questions,
+            'axes' => $axes,
+            'current_axis' => $currentAxis,
+            'next_axis' => $nextAxis,
+            'saved_answers' => $savedAnswers,
+        ]);
     }
 
     public function selectQuestionnaire($id)
@@ -55,6 +121,117 @@ class Application extends Controller
             return redirect()->to(base_url('application/form/1'));
         }
         return view('application/application_select_questionnaire', $data);
+    }
+
+    public function submitQuestionnaire()
+    {
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId <= 0) {
+            return redirect()->to(base_url('application'));
+        }
+
+        $currentAxis = trim((string) ($this->request->getPost('current_axis') ?? ''));
+        if ($currentAxis === '') {
+            return redirect()->to(base_url('application/form/1'));
+        }
+
+        $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
+        $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
+        $postData = $this->request->getPost();
+
+        $axisQuestions = $questionModel->where('nivel1', $currentAxis)->findAll();
+        $missingAnswers = [];
+
+        foreach ($axisQuestions as $question) {
+            if (($question['tipo_resposta'] ?? '') === 'INFO') {
+                continue;
+            }
+
+            $field = 'questao_' . (int) ($question['id'] ?? 0);
+            $value = $postData[$field] ?? null;
+            $hasValue = is_array($value) ? ! empty($value) : trim((string) $value) !== '';
+            if (! $hasValue) {
+                $missingAnswers[] = (int) ($question['id'] ?? 0);
+            }
+        }
+
+        if (! empty($missingAnswers)) {
+            session()->setFlashdata('questionnaire_error', 'Preencha todas as respostas obrigatórias antes de continuar.');
+            return redirect()->to(base_url('application/form/' . $currentAxis));
+        }
+
+        foreach ($postData as $field => $value) {
+            if (strpos((string) $field, 'questao_') !== 0) {
+                continue;
+            }
+
+            $questionId = (int) substr((string) $field, 8);
+            if ($questionId <= 0) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                $answerValue = json_encode($value, JSON_UNESCAPED_UNICODE);
+            } else {
+                $answerValue = trim((string) $value);
+            }
+
+            if ($answerValue === '') {
+                continue;
+            }
+
+            $existing = $answersModel
+                ->where('oai_pmh_id', $repoId)
+                ->where('questao_id', $questionId)
+                ->first();
+
+            $payload = [
+                'oai_pmh_id' => $repoId,
+                'questao_id' => $questionId,
+                'resposta' => $answerValue,
+            ];
+
+            if (! empty($existing['id'])) {
+                $answersModel->update((int) $existing['id'], $payload);
+            } else {
+                $answersModel->insert($payload);
+            }
+        }
+
+        $axisRows = $questionModel
+            ->select('nivel1')
+            ->where('nivel2', '')
+            ->findAll();
+
+        $axesMap = [];
+        foreach ($axisRows as $row) {
+            $axisKey = trim((string) ($row['nivel1'] ?? ''));
+            if ($axisKey !== '') {
+                $axesMap[$axisKey] = true;
+            }
+        }
+
+        $axes = array_keys($axesMap);
+        usort($axes, static fn (string $a, string $b): int => strnatcmp($a, $b));
+
+        $nextAxis = null;
+        $totalAxes = count($axes);
+        for ($i = 0; $i < $totalAxes; $i++) {
+            if ($axes[$i] === $currentAxis) {
+                if (isset($axes[$i + 1])) {
+                    $nextAxis = $axes[$i + 1];
+                }
+                break;
+            }
+        }
+
+        if ($nextAxis !== null) {
+            session()->setFlashdata('questionnaire_success', 'Respostas salvas. Você avançou para a próxima etapa.');
+            return redirect()->to(base_url('application/form/' . $nextAxis));
+        }
+
+        session()->setFlashdata('questionnaire_success', 'Respostas salvas. Questionário finalizado.');
+        return redirect()->to(base_url('application/form/' . $currentAxis));
     }
 
     private function streamHarvesting(string $repoLink): void

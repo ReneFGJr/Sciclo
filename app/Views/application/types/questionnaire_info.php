@@ -1,7 +1,11 @@
+<?php
+$q = isset($q) && is_array($q) ? $q : [];
+?>
+
 <div class="card mb-3">
     <div class="card-body">
-        <h5 class="card-title">Critério <?= esc($q['id']) ?></h5>
-        <p class="card-text mb-2"><?= esc($q['descricao']) ?></p>
+        <h5 class="card-title"><?= nl2br(glossario_conteudo($q['questao'] ?? ('Critério ' . ($q['id'] ?? '')))) ?></h5>
+        <p class="card-text mb-2"><?= nl2br(glossario_conteudo($q['descricao'] ?? '')) ?></p>
         <?php if (!empty($q['alternativas'])): ?>
             <?php foreach ($q['alternativas'] as $alt): ?>
                 <div class="form-check">

@@ -11,29 +11,68 @@ echo view('layout/navbar');
 ?>
 <div class="container py-4">
   <h2 class="mb-4">Questionário de Certificação</h2>
-  <form method="post" action="<?= base_url('application/submit_questionnaire') ?>">
-    <?php if (!empty($questions)): ?>
-      <?php foreach ($questions as $q): ?>
-        <?php
-        echo '<h1>'.$q['tipo_resposta'].'</h1>';
-        switch ($q['tipo_resposta']) {
-          case 'INFO':
-            echo view('application/types/questionnaire_info', ['q' => $q]);
-            break;
-          case 'SN':
-            echo view('application/types/questionnaire_sn', ['q' => $q]);
-            break;
-          default:
-            echo view('application/types/questionnaire_default', ['q' => $q]);
-            break;
-        }
-        ?>
-      <?php endforeach; ?>
-      <button type="submit" class="btn btn-primary">Enviar respostas</button>
-    <?php else: ?>
-      <div class="alert alert-warning">Nenhuma questão disponível.</div>
-    <?php endif; ?>
-  </form>
+
+  <?php if (session()->getFlashdata('questionnaire_error')): ?>
+    <div class="alert alert-danger"><?= esc(session()->getFlashdata('questionnaire_error')) ?></div>
+  <?php endif; ?>
+  <?php if (session()->getFlashdata('questionnaire_success')): ?>
+    <div class="alert alert-success"><?= esc(session()->getFlashdata('questionnaire_success')) ?></div>
+  <?php endif; ?>
+
+  <div class="row g-4">
+    <aside class="col-lg-3">
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold">Eixos</div>
+        <div class="list-group list-group-flush">
+          <?php if (!empty($axes)): ?>
+            <?php foreach ($axes as $axis): ?>
+              <?php $axisKey = (string) ($axis['eixo'] ?? ''); ?>
+              <a
+                href="<?= base_url('application/form/' . $axisKey) ?>"
+                class="list-group-item list-group-item-action <?= ((string) ($current_axis ?? '') === $axisKey) ? 'active' : '' ?>">
+                <div class="fw-semibold">Eixo <?= esc($axisKey) ?></div>
+                <small><?= nl2br(glossario_conteudo($axis['titulo'] ?? '')) ?></small>
+              </a>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <div class="list-group-item">Nenhum eixo encontrado.</div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </aside>
+
+    <section class="col-lg-9">
+      <form method="post" action="<?= base_url('application/submit_questionnaire') ?>">
+        <input type="hidden" name="current_axis" value="<?= esc((string) ($current_axis ?? '')) ?>">
+
+        <?php if (!empty($questions)): ?>
+          <?php foreach ($questions as $q): ?>
+            <?php
+            $qid = (int) ($q['id'] ?? 0);
+            $q['saved_answer'] = $saved_answers[$qid] ?? null;
+            switch ($q['tipo_resposta']) {
+              case 'INFO':
+                echo view('application/types/questionnaire_info', ['q' => $q]);
+                break;
+              case 'SN':
+                echo view('application/types/questionnaire_sn', ['q' => $q]);
+                break;
+              default:
+                echo view('application/types/questionnaire_default', ['q' => $q]);
+                break;
+            }
+            ?>
+          <?php endforeach; ?>
+
+          <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary">Salvar e continuar</button>
+          </div>
+        <?php else: ?>
+          <div class="alert alert-warning">Nenhuma questão disponível para este eixo.</div>
+        <?php endif; ?>
+      </form>
+    </section>
+  </div>
 </div>
 
 <?php

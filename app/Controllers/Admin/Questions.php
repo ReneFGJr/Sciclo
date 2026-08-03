@@ -10,7 +10,20 @@ class Questions extends Controller
     public function index()
     {
         $model = new CertificacaoQuestoesModel();
-        $data['questions'] = $model->findAll();
+        $questions = $model->findAll();
+
+        usort($questions, static function (array $a, array $b): int {
+            foreach (['criterio', 'nivel1', 'nivel2', 'nivel3'] as $field) {
+                $cmp = strnatcmp((string) ($a[$field] ?? ''), (string) ($b[$field] ?? ''));
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+            }
+
+            return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+        });
+
+        $data['questions'] = $questions;
         return view('admin/questions', $data);
     }
 

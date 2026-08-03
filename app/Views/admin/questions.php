@@ -4,6 +4,10 @@
 <?= view('layout/header') ?>
 <?= view('layout/navbar') ?>
 
+<?php
+$questions = isset($questions) && is_array($questions) ? $questions : [];
+?>
+
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="fw-bold mb-0">Questões de Certificação</h1>
@@ -37,9 +41,9 @@
                 <td><?= esc($q['nivel1']) ?></td>
                 <td><?= esc($q['nivel2']) ?></td>
                 <td><?= esc($q['nivel3']) ?></td>
-                <td><?= esc($q['questao']) ?></td>
+                <td><?= nl2br(glossario_conteudo($q['questao'] ?? '')) ?></td>
                 <td><?= esc($q['tipo_resposta']) ?></td>
-                <td><?= esc($q['descricao']) ?></td>
+                <td><?= nl2br(glossario_conteudo($q['descricao'] ?? '')) ?></td>
                 <td><?= esc($q['icone']) ?></td>
                 <td><?php if ($q['imagem']): ?><img src="<?= base_url($q['imagem']) ?>" alt="Imagem" style="max-width:40px;max-height:40px;"/><?php endif; ?></td>
                 <td><?= esc($q['condicional_1']) ?></td>

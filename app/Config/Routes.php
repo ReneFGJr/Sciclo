@@ -22,9 +22,10 @@ $routes->group('application', function($routes) {
     $routes->match(['get', 'post'], '/', 'Application::index');
 	$routes->match(['get', 'post'], 'form', 'Application::form');
     $routes->match(['get', 'post'], 'form/(:num)/(:num)/(:num)', 'Application::form/$1/$2/$3');
-    $routes->match(['get', 'post'], 'form/(:num)/(:num)', 'Application::form/$1/$2/$3');
-    $routes->match(['get', 'post'], 'form/(:num)', 'Application::form/$1/$2/$3');
+    $routes->match(['get', 'post'], 'form/(:num)/(:num)', 'Application::form/$1/$2');
+    $routes->match(['get', 'post'], 'form/(:num)', 'Application::form/$1');
     $routes->match(['get', 'post'], 'form/select/(:num)', 'Application::selectQuestionnaire/$1');
+    $routes->post('submit_questionnaire', 'Application::submitQuestionnaire');
 });
 
 $routes->group('admin', function ($routes) {
@@ -32,6 +33,11 @@ $routes->group('admin', function ($routes) {
     $routes->match(['get', 'post'], 'questions/add', 'Admin\\Questions::add');
     $routes->get('questions/delete/(:num)', 'Admin\\Questions::delete/$1');
     $routes->match(['get', 'post'], 'questions/edit/(:num)', 'Admin\\Questions::edit/$1');
+    $routes->get('guide-requirements', 'Admin\\GuideRequirements::index');
+    $routes->get('glossario', 'Admin\\Glossario::index');
+    $routes->match(['get', 'post'], 'glossario/create', 'Admin\\Glossario::create');
+    $routes->match(['get', 'post'], 'glossario/edit/(:num)', 'Admin\\Glossario::edit/$1');
+    $routes->get('glossario/delete/(:num)', 'Admin\\Glossario::delete/$1');
     $routes->get('faq', 'Admin\\Faq::index');
     $routes->match(['get', 'post'], 'faq/create', 'Admin\\Faq::create');
     $routes->get('faq/delete/(:num)', 'Admin\\Faq::delete/$1');

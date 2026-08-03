@@ -169,6 +169,7 @@ $q = isset($q) && is_array($q) ? $q : [];
 $questionId = (int) ($q['id'] ?? 0);
 $questionIdText = (string) $questionId;
 $questionDescription = is_scalar($q['descricao'] ?? null) ? (string) $q['descricao'] : '';
+$selectedAnswer = is_scalar($q['saved_answer'] ?? null) ? trim((string) $q['saved_answer']) : '';
 $animationDelay = (($questionId % 5) * 90) . 'ms';
 $enunciado = $q['questao'] ?? '';
 $criterio = $q['criterio'] ?? '';
@@ -181,8 +182,8 @@ $q['alternativas'] = [
 <div class="card mb-4 questionnaire-sn-card" style="animation-delay: <?= esc($animationDelay) ?>;">
     <div class="card-body">
         <span class="questionnaire-sn-badge">Critério #<?= esc($criterio) ?></span>
-        <h5 class="questionnaire-sn-title"><?= esc($enunciado) ?></h5>
-        <p class="questionnaire-sn-subtitle"><?= esc($questionDescription) ?></p>
+        <h5 class="questionnaire-sn-title"><?= nl2br(glossario_conteudo($enunciado)) ?></h5>
+        <p class="questionnaire-sn-subtitle"><?= nl2br(glossario_conteudo($questionDescription)) ?></p>
 
         <?php if (!empty($q['alternativas'])): ?>
             <div class="questionnaire-sn-options" role="radiogroup" aria-label="Questão <?= esc($questionIdText) ?>">
@@ -206,6 +207,7 @@ $q['alternativas'] = [
                             name="questao_<?= esc($questionIdText) ?>"
                             id="alt_<?= esc($questionIdText) ?>_<?= esc($optionId) ?>"
                             value="<?= esc($optionId) ?>"
+                            <?= $selectedAnswer === $optionId ? 'checked' : '' ?>
                             required>
                         <label class="questionnaire-sn-label <?= esc($labelClass) ?>" for="alt_<?= esc($questionIdText) ?>_<?= esc($optionId) ?>">
                             <span class="questionnaire-sn-text text-color-<?= esc($optionId) ?>"><?= esc($optionText) ?></span>

@@ -16,7 +16,31 @@
     </div>
   </div>
 </footer>
+<style>
+  .glossario-term {
+    border-bottom: 1px dotted currentColor;
+    cursor: help;
+    font-weight: 600;
+  }
+
+  .tooltip.tooltip-glossario .tooltip-inner {
+    max-width: 600px;
+    width: 600px;
+    text-align: left;
+  }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl, {
+        trigger: 'hover focus',
+        customClass: 'tooltip-glossario'
+      });
+    });
+  });
+</script>
 </body>
 
 </html>
