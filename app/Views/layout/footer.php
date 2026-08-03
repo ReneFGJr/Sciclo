@@ -28,6 +28,10 @@
     width: 600px;
     text-align: left;
   }
+
+  .evidence-list-link {
+    text-decoration: none;
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -37,6 +41,34 @@
       return new bootstrap.Tooltip(tooltipTriggerEl, {
         trigger: 'hover focus',
         customClass: 'tooltip-glossario'
+      });
+    });
+
+    document.querySelectorAll('.evidence-existing-select').forEach(function (selectEl) {
+      selectEl.addEventListener('change', function () {
+        var modal = selectEl.closest('.modal');
+        if (!modal) {
+          return;
+        }
+
+        var urlInput = modal.querySelector('.evidence-url');
+        var descInput = modal.querySelector('.evidence-description');
+        var selectedOption = selectEl.options[selectEl.selectedIndex];
+
+        if (!urlInput || !descInput || !selectedOption) {
+          return;
+        }
+
+        var url = selectedOption.getAttribute('data-url') || '';
+        var descricao = selectedOption.getAttribute('data-descricao') || '';
+
+        if (url) {
+          urlInput.value = url;
+        }
+
+        if (descricao) {
+          descInput.value = descricao;
+        }
       });
     });
   });

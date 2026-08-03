@@ -16,5 +16,7 @@ $q = isset($q) && is_array($q) ? $q : [];
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+
+        <?= view('application/types/questionnaire_evidence', ['q' => $q]) ?>
     </div>
 </div>

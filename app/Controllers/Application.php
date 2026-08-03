@@ -33,6 +33,7 @@ class Application extends Controller
     {
         $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
         $answerModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
+        $evidenceModel = new \App\Models\Question\EvidencyModel();
 
         $axisRows = $questionModel
             ->select('nivel1, criterio, questao')
@@ -83,6 +84,24 @@ class Application extends Controller
             }
         }
 
+        $existingEvidences = $repoId > 0
+            ? $evidenceModel->orderBy('updated_at', 'DESC')->findAll(200)
+            : [];
+
+        $evidencesByQuestion = [];
+        foreach ($existingEvidences as $evidence) {
+            $questionId = (int) ($evidence['questao_id'] ?? 0);
+            if ($questionId <= 0) {
+                continue;
+            }
+
+            if (! isset($evidencesByQuestion[$questionId])) {
+                $evidencesByQuestion[$questionId] = [];
+            }
+
+            $evidencesByQuestion[$questionId][] = $evidence;
+        }
+
         $nextAxis = null;
         $currentAxis = (string) $c1;
         $totalAxes = count($axes);
@@ -101,6 +120,8 @@ class Application extends Controller
             'current_axis' => $currentAxis,
             'next_axis' => $nextAxis,
             'saved_answers' => $savedAnswers,
+            'existing_evidences' => $existingEvidences,
+            'evidences_by_question' => $evidencesByQuestion,
         ]);
     }
 
@@ -232,6 +253,154 @@ class Application extends Controller
 
         session()->setFlashdata('questionnaire_success', 'Respostas salvas. Questionário finalizado.');
         return redirect()->to(base_url('application/form/' . $currentAxis));
+    }
+
+    public function saveEvidence()
+    {
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId <= 0) {
+            return redirect()->to(base_url('application'));
+        }
+
+        $questionId = (int) ($this->request->getPost('questao_id') ?? 0);
+        $currentAxis = trim((string) ($this->request->getPost('current_axis') ?? '1'));
+        $existingEvidenceId = (int) ($this->request->getPost('evidence_id') ?? 0);
+
+        $evidenceModel = new \App\Models\Question\EvidencyModel();
+
+        $url = trim((string) ($this->request->getPost('url') ?? ''));
+        $descricao = trim((string) ($this->request->getPost('descricao') ?? ''));
+        $urlHash = hash('sha256', strtolower($url));
+
+        if ($existingEvidenceId > 0) {
+            $existing = $evidenceModel->find($existingEvidenceId);
+            if ($existing) {
+                if ($url === '') {
+                    $url = (string) ($existing['url'] ?? '');
+                }
+                if ($descricao === '') {
+                    $descricao = (string) ($existing['descricao'] ?? '');
+                }
+            }
+        }
+
+        if ($questionId <= 0 || $url === '') {
+            session()->setFlashdata('evidence_error', 'Informe uma URL válida para a evidência.');
+            session()->setFlashdata('evidence_modal_question', $questionId);
+            return redirect()->to(base_url('application/form/' . $currentAxis));
+        }
+
+        $titulo = $this->resolveEvidenceTitle($url);
+        if ($titulo === '') {
+            $titulo = $url;
+        }
+
+        $payload = [
+            'oai_pmh_id' => $repoId,
+            'questao_id' => $questionId,
+            'url' => $url,
+            'url_hash' => $urlHash,
+            'titulo' => $titulo,
+            'descricao' => $descricao,
+        ];
+
+        $existing = $evidenceModel
+            ->where('oai_pmh_id', $repoId)
+            ->where('questao_id', $questionId)
+            ->where('url_hash', $urlHash)
+            ->first();
+
+        if (! empty($existing['id'])) {
+            $evidenceModel->update((int) $existing['id'], $payload);
+        } else {
+            $evidenceModel->insert($payload);
+        }
+
+        session()->setFlashdata('evidence_success', 'Evidência salva com sucesso: ' . $titulo);
+        session()->setFlashdata('evidence_modal_question', $questionId);
+        return redirect()->to(base_url('application/form/' . $currentAxis));
+    }
+
+    public function deleteEvidence($id = null)
+    {
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId <= 0) {
+            return redirect()->to(base_url('application'));
+        }
+
+        $evidenceModel = new \App\Models\Question\EvidencyModel();
+        $existing = $evidenceModel->find($id);
+
+        if (! $existing || (int) ($existing['oai_pmh_id'] ?? 0) !== $repoId) {
+            session()->setFlashdata('evidence_error', 'Evidência não encontrada.');
+            return redirect()->back();
+        }
+
+        $currentAxis = trim((string) ($this->request->getGet('axis') ?? '1'));
+        $evidenceModel->delete($id);
+
+        session()->setFlashdata('evidence_success', 'Evidência excluída com sucesso.');
+        session()->setFlashdata('evidence_modal_question', (int) ($existing['questao_id'] ?? 0));
+        return redirect()->to(base_url('application/form/' . $currentAxis));
+    }
+
+    public function editEvidence($id = null)
+    {
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId <= 0) {
+            return redirect()->to(base_url('application'));
+        }
+
+        $evidenceModel = new \App\Models\Question\EvidencyModel();
+        $existing = $evidenceModel->find($id);
+        if (! $existing || (int) ($existing['oai_pmh_id'] ?? 0) !== $repoId) {
+            session()->setFlashdata('evidence_error', 'Evidência não encontrada para edição.');
+            return redirect()->back();
+        }
+
+        return redirect()->to(base_url('application/form/' . (int) ($this->request->getGet('axis') ?? 1)));
+    }
+
+    private function resolveEvidenceTitle(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 12,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        $html = curl_exec($ch);
+        curl_close($ch);
+
+        if (is_string($html) && $html !== '') {
+            if (preg_match('~<title[^>]*>(.*?)</title>~is', $html, $matches)) {
+                $title = trim(html_entity_decode(strip_tags($matches[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if ($title !== '') {
+                    return $title;
+                }
+            }
+        }
+
+        $parts = parse_url($url);
+        if (is_array($parts) && ! empty($parts['host'])) {
+            $path = trim((string) ($parts['path'] ?? ''), '/');
+            if ($path !== '') {
+                return $parts['host'] . ' / ' . basename($path);
+            }
+
+            return (string) $parts['host'];
+        }
+
+        return $url;
     }
 
     private function streamHarvesting(string $repoLink): void

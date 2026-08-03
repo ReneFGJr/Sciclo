@@ -18,6 +18,17 @@ echo view('layout/navbar');
   <?php if (session()->getFlashdata('questionnaire_success')): ?>
     <div class="alert alert-success"><?= esc(session()->getFlashdata('questionnaire_success')) ?></div>
   <?php endif; ?>
+  <?php if (session()->getFlashdata('evidence_error')): ?>
+    <div class="alert alert-danger"><?= esc(session()->getFlashdata('evidence_error')) ?></div>
+  <?php endif; ?>
+  <?php if (session()->getFlashdata('evidence_success')): ?>
+    <div class="alert alert-success"><?= esc(session()->getFlashdata('evidence_success')) ?></div>
+  <?php endif; ?>
+  <?php
+    $evidenceFlashQuestion = (int) (session()->getFlashdata('evidence_modal_question') ?? 0);
+    $evidenceFlashError = session()->getFlashdata('evidence_error');
+    $evidenceFlashSuccess = session()->getFlashdata('evidence_success');
+  ?>
 
   <div class="row g-4">
     <aside class="col-lg-3">
@@ -50,6 +61,12 @@ echo view('layout/navbar');
             <?php
             $qid = (int) ($q['id'] ?? 0);
             $q['saved_answer'] = $saved_answers[$qid] ?? null;
+            $q['evidencias'] = $evidences_by_question[$qid] ?? [];
+            $q['existing_evidences'] = $existing_evidences ?? [];
+            $q['current_axis'] = $current_axis ?? '';
+            $q['evidence_flash_question'] = $evidenceFlashQuestion;
+            $q['evidence_flash_error'] = $evidenceFlashError;
+            $q['evidence_flash_success'] = $evidenceFlashSuccess;
             switch ($q['tipo_resposta']) {
               case 'INFO':
                 echo view('application/types/questionnaire_info', ['q' => $q]);

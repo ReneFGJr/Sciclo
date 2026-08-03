@@ -217,5 +217,7 @@ $q['alternativas'] = [
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+
+        <?= view('application/types/questionnaire_evidence', ['q' => $q]) ?>
     </div>
 </div>
