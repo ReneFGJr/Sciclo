@@ -9,8 +9,8 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
 <style>
     .guide-shell {
         background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 35%),
-                    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 30%),
-                    linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+            radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 30%),
+            linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
         min-height: 100vh;
     }
 
@@ -92,12 +92,8 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
                 <div>
                     <span class="guide-axis-badge mb-3">Guia de requisitos</span>
-                    <h1 class="display-6 guide-title mb-2">Relatório da tabela certificacao_questoes</h1>
-                    <p class="lead guide-subtitle mb-0">Organizado por nível 1, nível 2 e nível 3, com destaque para o título principal quando nível 2 está vazio.</p>
-                </div>
-                <div class="text-lg-end">
-                    <div class="badge bg-light text-dark rounded-pill px-3 py-2 mb-2">Total de registros: <?= count($questions) ?></div>
-                    <div class="small guide-subtitle">Exibição pensada para leitura rápida e navegação por eixo.</div>
+                    <h1 class="display-6 guide-title mb-2">Guia de certificação de repositório confiável</h1>
+                    <p class="lead guide-subtitle mb-0">O Guia de Certificação de Repositório Confiável reúne princípios, requisitos e boas práticas para avaliar e demonstrar a confiabilidade de repositórios digitais. Seu objetivo é orientar instituições na implementação de políticas, processos e infraestrutura que assegurem a preservação digital, a integridade, a autenticidade, a segurança e o acesso contínuo aos objetos digitais, servindo como referência para certificações nacionais e internacionais de repositórios confiáveis..</p>
                 </div>
             </div>
         </div>
@@ -120,20 +116,17 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
                     <div class="card-body p-4">
                         <?php foreach ($section['items'] as $item): ?>
                             <?php $isRoot = trim((string) ($item['nivel2'] ?? '')) === ''; ?>
+                            <?php if ($item['nivel2'] != '') { ?>
                             <div class="guide-item <?= $isRoot ? 'root' : '' ?>">
-                                <div class="guide-level"><?= $isRoot ? 'Título do eixo' : 'Subnível' ?></div>
+                                <div class="guide-level"><?= $isRoot ? 'Título do eixo' : 'Critério' ?> <?= esc((string) ($item['nivel1'] ?? '') . '.' . (string) ($item['nivel2'] ?? '') . (trim((string) ($item['nivel3'] ?? '')) !== '' ? '.' . (string) $item['nivel3'] : '')) ?></div>
                                 <div class="guide-question"><?= nl2br(glossario_conteudo($item['questao'] ?? '')) ?></div>
-                                <?php if (! $isRoot): ?>
-                                    <div class="guide-meta mb-1">
-                                        Critério <?= esc($item['criterio']) ?> · Nível 1: <?= esc($item['nivel1']) ?> · Nível 2: <?= esc($item['nivel2']) ?> · Nível 3: <?= esc($item['nivel3']) ?>
-                                    </div>
-                                <?php endif; ?>
                                 <?php if (!empty($item['descricao'])): ?>
                                     <div class="text-body-secondary"><?= nl2br(glossario_conteudo($item['descricao'])) ?></div>
                                 <?php else: ?>
                                     <div class="text-body-tertiary fst-italic">Sem descrição cadastrada.</div>
                                 <?php endif; ?>
                             </div>
+                        <?php } ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
