@@ -36,11 +36,137 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl, {
-        trigger: 'hover focus',
-        customClass: 'tooltip-glossario'
+    function initTooltips() {
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+        if (tooltipTriggerEl.getAttribute('data-tooltip-ready') === '1') {
+          return;
+        }
+
+        new bootstrap.Tooltip(tooltipTriggerEl, {
+          trigger: 'hover focus',
+          customClass: 'tooltip-glossario'
+        });
+
+        tooltipTriggerEl.setAttribute('data-tooltip-ready', '1');
+      });
+    }
+
+    initTooltips();
+
+    document.querySelectorAll('.evidence-edit-btn').forEach(function (buttonEl) {
+      buttonEl.addEventListener('click', function () {
+        var modalSelector = buttonEl.getAttribute('data-modal-target') || '';
+        if (!modalSelector) {
+          return;
+        }
+
+        var modalEl = document.querySelector(modalSelector);
+        if (!modalEl) {
+          return;
+        }
+
+        var editIdInput = modalEl.querySelector('.evidence-edit-id');
+        var existingSelect = modalEl.querySelector('.evidence-existing-select');
+        var urlInput = modalEl.querySelector('.evidence-url');
+        var descInput = modalEl.querySelector('.evidence-description');
+        var titleEl = modalEl.querySelector('.modal-title');
+
+        if (editIdInput) {
+          editIdInput.value = buttonEl.getAttribute('data-evidence-id') || '';
+        }
+        if (existingSelect) {
+          existingSelect.value = '';
+        }
+        if (urlInput) {
+          urlInput.value = buttonEl.getAttribute('data-evidence-url') || '';
+        }
+        if (descInput) {
+          descInput.value = buttonEl.getAttribute('data-evidence-descricao') || '';
+        }
+        if (titleEl) {
+          titleEl.textContent = 'Editar evidência';
+        }
+
+        initTooltips();
+
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      });
+    });
+
+    document.querySelectorAll('.evidence-delete-btn').forEach(function (buttonEl) {
+      buttonEl.addEventListener('click', function () {
+        var action = buttonEl.getAttribute('data-delete-action') || '';
+        var axis = buttonEl.getAttribute('data-axis') || '';
+
+        if (!action) {
+          return;
+        }
+
+        var confirmed = window.confirm('Deseja realmente excluir esta evidência?');
+        if (!confirmed) {
+          return;
+        }
+
+        var postForm = document.createElement('form');
+        postForm.method = 'post';
+        postForm.action = action;
+        postForm.style.display = 'none';
+
+        var axisInput = document.createElement('input');
+        axisInput.type = 'hidden';
+        axisInput.name = 'axis';
+        axisInput.value = axis;
+        postForm.appendChild(axisInput);
+
+        document.body.appendChild(postForm);
+        postForm.submit();
+      });
+    });
+
+    document.querySelectorAll('.evidence-existing-select').forEach(function (selectEl) {
+      selectEl.addEventListener('change', function () {
+        var modal = selectEl.closest('.modal');
+        if (!modal) {
+          return;
+        }
+
+        var editIdInput = modal.querySelector('.evidence-edit-id');
+        if (editIdInput) {
+          editIdInput.value = '';
+        }
+
+        var titleEl = modal.querySelector('.modal-title');
+        if (titleEl) {
+          titleEl.textContent = 'Inserir evidência';
+        }
+      });
+    });
+
+    document.querySelectorAll('.modal').forEach(function (modalEl) {
+      modalEl.addEventListener('hidden.bs.modal', function () {
+        var editIdInput = modalEl.querySelector('.evidence-edit-id');
+        var existingSelect = modalEl.querySelector('.evidence-existing-select');
+        var urlInput = modalEl.querySelector('.evidence-url');
+        var descInput = modalEl.querySelector('.evidence-description');
+        var titleEl = modalEl.querySelector('.modal-title');
+
+        if (editIdInput) {
+          editIdInput.value = '';
+        }
+        if (existingSelect) {
+          existingSelect.value = '';
+        }
+        if (urlInput) {
+          urlInput.value = '';
+        }
+        if (descInput) {
+          descInput.value = '';
+        }
+        if (titleEl) {
+          titleEl.textContent = 'Inserir evidência';
+        }
       });
     });
 
@@ -69,6 +195,58 @@
         if (descricao) {
           descInput.value = descricao;
         }
+      });
+    });
+
+    document.querySelectorAll('.evidence-submit-btn').forEach(function (buttonEl) {
+      buttonEl.addEventListener('click', function () {
+        var modal = buttonEl.closest('.modal');
+        if (!modal) {
+          return;
+        }
+
+        var wrapper = modal.querySelector('.evidence-form');
+        var action = wrapper ? (wrapper.getAttribute('data-action') || '') : '';
+        var questionInput = modal.querySelector('.evidence-question-id');
+        var axisInput = modal.querySelector('.evidence-current-axis');
+        var existingSelect = modal.querySelector('.evidence-existing-select');
+        var urlInput = modal.querySelector('.evidence-url');
+        var descInput = modal.querySelector('.evidence-description');
+        var editIdInput = modal.querySelector('.evidence-edit-id');
+
+        if (!action || !questionInput || !axisInput || !urlInput || !descInput) {
+          return;
+        }
+
+        if (!urlInput.checkValidity()) {
+          urlInput.reportValidity();
+          return;
+        }
+
+        var postForm = document.createElement('form');
+        postForm.method = 'post';
+        postForm.action = action;
+        postForm.style.display = 'none';
+
+        var fields = [
+          { name: 'questao_id', value: questionInput.value || '' },
+          { name: 'current_axis', value: axisInput.value || '' },
+          { name: 'edit_id', value: editIdInput ? (editIdInput.value || '') : '' },
+          { name: 'evidence_id', value: existingSelect ? (existingSelect.value || '') : '' },
+          { name: 'url', value: urlInput.value || '' },
+          { name: 'descricao', value: descInput.value || '' }
+        ];
+
+        fields.forEach(function (field) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = field.name;
+          input.value = field.value;
+          postForm.appendChild(input);
+        });
+
+        document.body.appendChild(postForm);
+        postForm.submit();
       });
     });
   });

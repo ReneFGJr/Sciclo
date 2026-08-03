@@ -6,4 +6,5 @@ Para inserir as evidências o usuário pode reutilizar evidências já inseridas
 
 Ao "##### Inserir evidência" mostre o resultado se a evidência foi inserida com sucesso apresetando o ítulo, se deu erro mostre o erro.
 
-Em baixo de cada critério mostre as evidência, tenha um botão de editar e excluir (use icone)
+Em baixo de cada critério mostre as evidência.
+Nas evidências tenha um botão de editar e excluir (use icone)

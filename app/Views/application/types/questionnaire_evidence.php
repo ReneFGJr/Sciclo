@@ -28,16 +28,47 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
     <?php if (!empty($questionEvidences)): ?>
         <div class="list-group mb-2">
             <?php foreach ($questionEvidences as $evidence): ?>
-                <a href="<?= esc($evidence['url']) ?>" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+                <?php
+                $evidenceId = (int) ($evidence['id'] ?? 0);
+                $evidenceTitle = (string) ($evidence['titulo'] ?? $evidence['url'] ?? 'Evidência');
+                $evidenceUrl = (string) ($evidence['url'] ?? '');
+                $evidenceDescription = (string) ($evidence['descricao'] ?? '');
+                ?>
+                <div class="list-group-item d-flex justify-content-between align-items-start gap-3">
                     <div class="me-3">
-                        <div class="fw-semibold"><?= esc($evidence['titulo'] ?? $evidence['url']) ?></div>
-                        <small class="text-muted d-block text-break"><?= esc($evidence['url']) ?></small>
-                        <?php if (!empty($evidence['descricao'])): ?>
-                            <small class="text-body-secondary d-block"><?= esc($evidence['descricao']) ?></small>
+                        <a href="<?= esc($evidenceUrl) ?>" target="_blank" rel="noopener noreferrer" class="fw-semibold text-decoration-none">
+                            <?= esc($evidenceTitle) ?>
+                        </a>
+                        <small class="text-muted d-block text-break"><?= esc($evidenceUrl) ?></small>
+                        <?php if ($evidenceDescription !== ''): ?>
+                            <small class="text-body-secondary d-block"><?= esc($evidenceDescription) ?></small>
                         <?php endif; ?>
                     </div>
-                    <span class="badge bg-success-subtle text-success">Salva</span>
-                </a>
+                    <div class="d-flex align-items-center gap-2">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary evidence-edit-btn"
+                            data-bs-toggle="tooltip"
+                            title="Editar evidência"
+                            data-modal-target="#<?= esc($modalId) ?>"
+                            data-evidence-id="<?= esc((string) $evidenceId) ?>"
+                            data-evidence-url="<?= esc($evidenceUrl) ?>"
+                            data-evidence-descricao="<?= esc($evidenceDescription) ?>"
+                            data-evidence-title="<?= esc($evidenceTitle) ?>">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger evidence-delete-btn"
+                            data-bs-toggle="tooltip"
+                            title="Excluir evidência"
+                            data-delete-action="<?= base_url('application/evidence/delete/' . $evidenceId) ?>"
+                            data-axis="<?= esc($currentAxis) ?>">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <span class="badge bg-success-subtle text-success">Salva</span>
+                    </div>
+                </div>
             <?php endforeach; ?>
         </div>
     <?php else: ?>
@@ -48,14 +79,15 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
 <div class="modal fade" id="<?= esc($modalId) ?>" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('application/evidence/save') ?>">
+            <div class="evidence-form" data-action="<?= base_url('application/evidence/save') ?>">
                 <div class="modal-header">
                     <h5 class="modal-title">Inserir evidência</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="current_axis" value="<?= esc($currentAxis) ?>">
-                    <input type="hidden" name="questao_id" value="<?= esc((string) $questionId) ?>">
+                    <input type="hidden" class="evidence-current-axis" value="<?= esc($currentAxis) ?>">
+                    <input type="hidden" class="evidence-question-id" value="<?= esc((string) $questionId) ?>">
+                    <input type="hidden" class="evidence-edit-id" value="">
 
                     <?php if (!empty($existingEvidences)): ?>
                         <div class="mb-3">
@@ -90,9 +122,9 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar evidência</button>
+                    <button type="button" class="btn btn-primary evidence-submit-btn">Salvar evidência</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

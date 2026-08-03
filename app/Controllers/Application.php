@@ -85,7 +85,10 @@ class Application extends Controller
         }
 
         $existingEvidences = $repoId > 0
-            ? $evidenceModel->orderBy('updated_at', 'DESC')->findAll(200)
+            ? $evidenceModel
+                ->where('oai_pmh_id', $repoId)
+                ->orderBy('updated_at', 'DESC')
+                ->findAll(200)
             : [];
 
         $evidencesByQuestion = [];
@@ -265,15 +268,18 @@ class Application extends Controller
         $questionId = (int) ($this->request->getPost('questao_id') ?? 0);
         $currentAxis = trim((string) ($this->request->getPost('current_axis') ?? '1'));
         $existingEvidenceId = (int) ($this->request->getPost('evidence_id') ?? 0);
+        $editEvidenceId = (int) ($this->request->getPost('edit_id') ?? 0);
 
         $evidenceModel = new \App\Models\Question\EvidencyModel();
 
         $url = trim((string) ($this->request->getPost('url') ?? ''));
         $descricao = trim((string) ($this->request->getPost('descricao') ?? ''));
-        $urlHash = hash('sha256', strtolower($url));
 
         if ($existingEvidenceId > 0) {
-            $existing = $evidenceModel->find($existingEvidenceId);
+            $existing = $evidenceModel
+                ->where('id', $existingEvidenceId)
+                ->where('oai_pmh_id', $repoId)
+                ->first();
             if ($existing) {
                 if ($url === '') {
                     $url = (string) ($existing['url'] ?? '');
@@ -290,6 +296,8 @@ class Application extends Controller
             return redirect()->to(base_url('application/form/' . $currentAxis));
         }
 
+        $urlHash = hash('sha256', strtolower($url));
+
         $titulo = $this->resolveEvidenceTitle($url);
         if ($titulo === '') {
             $titulo = $url;
@@ -304,16 +312,33 @@ class Application extends Controller
             'descricao' => $descricao,
         ];
 
-        $existing = $evidenceModel
-            ->where('oai_pmh_id', $repoId)
-            ->where('questao_id', $questionId)
-            ->where('url_hash', $urlHash)
-            ->first();
+        $existing = null;
+        if ($editEvidenceId > 0) {
+            $existing = $evidenceModel
+                ->where('id', $editEvidenceId)
+                ->where('oai_pmh_id', $repoId)
+                ->first();
+        }
 
+        if (! $existing) {
+            $existing = $evidenceModel
+                ->where('oai_pmh_id', $repoId)
+                ->where('questao_id', $questionId)
+                ->where('url_hash', $urlHash)
+                ->first();
+        }
+
+        $saved = false;
         if (! empty($existing['id'])) {
-            $evidenceModel->update((int) $existing['id'], $payload);
+            $saved = $evidenceModel->update((int) $existing['id'], $payload);
         } else {
-            $evidenceModel->insert($payload);
+            $saved = $evidenceModel->insert($payload) !== false;
+        }
+
+        if (! $saved) {
+            session()->setFlashdata('evidence_error', 'Não foi possível salvar a evidência. Tente novamente.');
+            session()->setFlashdata('evidence_modal_question', $questionId);
+            return redirect()->to(base_url('application/form/' . $currentAxis));
         }
 
         session()->setFlashdata('evidence_success', 'Evidência salva com sucesso: ' . $titulo);
@@ -336,7 +361,7 @@ class Application extends Controller
             return redirect()->back();
         }
 
-        $currentAxis = trim((string) ($this->request->getGet('axis') ?? '1'));
+        $currentAxis = trim((string) ($this->request->getPost('axis') ?? $this->request->getGet('axis') ?? '1'));
         $evidenceModel->delete($id);
 
         session()->setFlashdata('evidence_success', 'Evidência excluída com sucesso.');

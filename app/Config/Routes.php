@@ -27,6 +27,7 @@ $routes->group('application', function($routes) {
     $routes->match(['get', 'post'], 'form/select/(:num)', 'Application::selectQuestionnaire/$1');
     $routes->post('submit_questionnaire', 'Application::submitQuestionnaire');
     $routes->post('evidence/save', 'Application::saveEvidence');
+    $routes->post('evidence/delete/(:num)', 'Application::deleteEvidence/$1');
 });
 
 $routes->group('admin', function ($routes) {
