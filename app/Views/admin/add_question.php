@@ -19,6 +19,7 @@
                     <option value="1" <?= (isset($question) && $question['nivel1'] == '1') ? 'selected' : '' ?>>1º Eixo</option>
                     <option value="2" <?= (isset($question) && $question['nivel1'] == '2') ? 'selected' : '' ?>>2º Eixo</option>
                     <option value="3" <?= (isset($question) && $question['nivel1'] == '3') ? 'selected' : '' ?>>3º Eixo</option>
+                    <option value="4" <?= (isset($question) && $question['nivel1'] == '4') ? 'selected' : '' ?>>4º Eixo</option>
                 </select>
             </div>
             <div class="col-md-3">
