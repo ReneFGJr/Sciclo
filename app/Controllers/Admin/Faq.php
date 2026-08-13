@@ -36,7 +36,7 @@ class Faq extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Pergunta não encontrada");
         }
 
-        if ($this->request->getMethod() === 'post') {
+        if (strtolower($this->request->getMethod()) === 'post') {
             $data = [
                 'question' => $this->request->getPost('question'),
                 'answer'   => $this->request->getPost('answer'),
