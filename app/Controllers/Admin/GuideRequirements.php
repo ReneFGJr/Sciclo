@@ -35,6 +35,7 @@ class GuideRequirements extends BaseController
                     'eixo' => $axisKey,
                     'titulo' => '',
                     'descricao' => '',
+                    'feedback' => '',
                     'items' => [],
                 ];
             }
@@ -42,6 +43,7 @@ class GuideRequirements extends BaseController
             if (trim((string) ($question['nivel2'] ?? '')) === '' && $sections[$axisKey]['titulo'] === '') {
                 $sections[$axisKey]['titulo'] = (string) ($question['questao'] ?? '');
                 $sections[$axisKey]['descricao'] = (string) ($question['descricao'] ?? '');
+                $sections[$axisKey]['feedback'] = (string) ($question['feedback'] ?? '');
             }
 
             $sections[$axisKey]['items'][] = $question;

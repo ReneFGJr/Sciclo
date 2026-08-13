@@ -32,7 +32,7 @@
             </div>
         </div>
         <div class="mb-3 mt-3">
-            <label for="questao" class="form-label">Questão/Informação</label>
+            <label for="questao" class="form-label">Critério</label>
             <textarea class="form-control" id="questao" name="questao" rows="2" required><?= isset($question) ? esc($question['questao']) : '' ?></textarea>
         </div>
         <div class="row g-3">
@@ -59,8 +59,12 @@
             </div>
         </div>
         <div class="mb-3 mt-3">
-            <label for="descricao" class="form-label">Descrição</label>
-            <textarea class="form-control" id="descricao" name="descricao" rows="2"><?= isset($question) ? esc($question['descricao']) : '' ?></textarea>
+            <label for="descricao" class="form-label">Pergunta norteadora</label>
+            <textarea class="form-control" id="descricao" name="descricao" rows="4"><?= isset($question) ? esc($question['descricao']) : '' ?></textarea>
+        </div>
+        <div class="mb-3 mt-3">
+            <label for="feedback" class="form-label">Feedback</label>
+            <textarea class="form-control" id="feedback" name="feedback" rows="5"><?= isset($question) ? esc($question['feedback'] ?? '') : '' ?></textarea>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">

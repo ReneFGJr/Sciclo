@@ -106,7 +106,11 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
                             <span class="guide-axis-badge">Eixo <?= esc($section['eixo']) ?></span>
                             <h2 class="h4 mt-2 mb-1 guide-title"><?= nl2br(glossario_conteudo($section['titulo'] !== '' ? $section['titulo'] : 'Título não informado')) ?></h2>
                             <?php if (!empty($section['descricao'])): ?>
-                                <p class="mb-0 text-muted"><?= esc($section['descricao']) ?></p>
+                                <p class="mb-0 text-muted"><?= nl2br(glossario_conteudo($section['descricao'])) ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($section['feedback'])): ?>
+                                <div class="guide-meta mt-2">Feedback</div>
+                                <p class="mb-0 text-muted"><?= nl2br(glossario_conteudo($section['feedback'])) ?></p>
                             <?php endif; ?>
                         </div>
                         <div class="text-md-end">
@@ -118,12 +122,13 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
                             <?php $isRoot = trim((string) ($item['nivel2'] ?? '')) === ''; ?>
                             <?php if ($item['nivel2'] != '') { ?>
                             <div class="guide-item <?= $isRoot ? 'root' : '' ?>">
-                                <div class="guide-level"><?= $isRoot ? 'Título do eixo' : 'Critério' ?> <?= esc((string) ($item['nivel1'] ?? '') . '.' . (string) ($item['nivel2'] ?? '') . (trim((string) ($item['nivel3'] ?? '')) !== '' ? '.' . (string) $item['nivel3'] : '')) ?></div>
-                                <div class="guide-question"><?= nl2br(glossario_conteudo($item['questao'] ?? '')) ?></div>
+                                <div class="guide-level"><?= $isRoot ? 'Título do eixo' : 'Critério' ?> <?= esc((string) ($item['nivel1'] ?? '') . '.' . (string) ($item['nivel2'] ?? '') . (trim((string) ($item['nivel3'] ?? '')) !== '' ? '.' . (string) $item['nivel3'] : '')) ?> - <?= nl2br(glossario_conteudo($item['questao'] ?? '')) ?></div>
                                 <?php if (!empty($item['descricao'])): ?>
                                     <div class="text-body-secondary"><?= nl2br(glossario_conteudo($item['descricao'])) ?></div>
-                                <?php else: ?>
-                                    <div class="text-body-tertiary fst-italic">Sem descrição cadastrada.</div>
+                                <?php endif; ?>
+                                <?php if (!empty($item['feedback'])): ?>
+                                    <div class="guide-meta mt-2">Feedback</div>
+                                    <div class="text-body-secondary"><?= nl2br(glossario_conteudo($item['feedback'])) ?></div>
                                 <?php endif; ?>
                             </div>
                         <?php } ?>
