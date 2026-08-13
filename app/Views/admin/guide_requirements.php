@@ -98,12 +98,12 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
     <div class="container">
         <div class="guide-hero p-4 p-lg-5 mb-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
-                <div>
-                    <img src="<?= base_url(); ?>/assets/logo/logo_sciclo.png" alt="Logo Sciclo" class="guide-logo mb-3">
+                <div class="flex-grow-1">
                     <span class="guide-axis-badge mb-3">Guia de requisitos</span>
                     <h1 class="display-6 guide-title mb-2">Guia de certificação de repositório confiável</h1>
                     <p class="lead guide-subtitle mb-0">O Guia de Certificação de Repositório Confiável reúne princípios, requisitos e boas práticas para avaliar e demonstrar a confiabilidade de repositórios digitais. Seu objetivo é orientar instituições na implementação de políticas, processos e infraestrutura que assegurem a preservação digital, a integridade, a autenticidade, a segurança e o acesso contínuo aos objetos digitais, servindo como referência para certificações nacionais e internacionais de repositórios confiáveis..</p>
                 </div>
+                <img src="<?= base_url(); ?>/assets/logo/logo_sciclo.png" alt="Logo Sciclo" class="guide-logo">
             </div>
         </div>
 
