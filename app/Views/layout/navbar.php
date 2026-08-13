@@ -24,6 +24,15 @@
         <li class="nav-item">
           <a class="nav-link" href="<?= base_url(); ?>/contact">Contato</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= base_url(); ?>/admin/guide-requirements">Guia de certificação</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= base_url(); ?>/faq">FAQ</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= base_url(); ?>/glossary">Glossário</a>
+        </li>
         <?php if (!session('logged_in')): ?>
         <li class="nav-item ms-2">
           <a class="nav-link d-flex align-items-center px-3 py-1 border border-2 border-secondary rounded-pill text-secondary" href="<?= base_url(); ?>/login" title="Login" style="gap: 0.5rem;">
@@ -43,7 +52,6 @@
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/glossario">Editar Glossário</a></li>
-            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/guide-requirements">Guia de requisitos</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/faq">Editar FAQ</a></li>
           </ul>
         </li>

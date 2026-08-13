@@ -50,6 +50,14 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
         color: rgba(255, 255, 255, 0.85);
     }
 
+    .guide-logo {
+        display: block;
+        margin-left: auto;
+        max-width: min(220px, 70vw);
+        max-height: 72px;
+        object-fit: contain;
+    }
+
     .guide-item {
         border-left: 4px solid #cbd5e1;
         padding-left: 1rem;
@@ -91,6 +99,7 @@ $sections = isset($sections) && is_array($sections) ? $sections : [];
         <div class="guide-hero p-4 p-lg-5 mb-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
                 <div>
+                    <img src="<?= base_url(); ?>/assets/logo/logo_sciclo.png" alt="Logo Sciclo" class="guide-logo mb-3">
                     <span class="guide-axis-badge mb-3">Guia de requisitos</span>
                     <h1 class="display-6 guide-title mb-2">Guia de certificação de repositório confiável</h1>
                     <p class="lead guide-subtitle mb-0">O Guia de Certificação de Repositório Confiável reúne princípios, requisitos e boas práticas para avaliar e demonstrar a confiabilidade de repositórios digitais. Seu objetivo é orientar instituições na implementação de políticas, processos e infraestrutura que assegurem a preservação digital, a integridade, a autenticidade, a segurança e o acesso contínuo aos objetos digitais, servindo como referência para certificações nacionais e internacionais de repositórios confiáveis..</p>

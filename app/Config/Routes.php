@@ -17,6 +17,8 @@ $routes->group('about', function ($routes) {
     $routes->get('faq', 'About::faq');
     $routes->get('contact', 'About::contact');
 });
+$routes->get('faq', 'About::faq');
+$routes->get('glossary', 'About::glossary');
 
 $routes->group('application', function($routes) {
     $routes->match(['get', 'post'], '/', 'Application::index');

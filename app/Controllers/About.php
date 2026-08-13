@@ -29,4 +29,11 @@ class About extends Controller
         $data['faqs'] = $model->findAll();
         return view('about/faq', $data);
     }
+
+    public function glossary()
+    {
+        $model = new \App\Models\GlossarioModel();
+        $data['items'] = $model->orderBy('termo', 'ASC')->findAll();
+        return view('about/glossary', $data);
+    }
 }
