@@ -7,7 +7,7 @@
             <?php foreach ($faqs as $i => $faq): ?>
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="heading<?= $i ?>">
-                        <button class="accordion-button <?= $i !== 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $i ?>" aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $i ?>">
+                        <button class="accordion-button fs-4 fw-bold <?= $i !== 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $i ?>" aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $i ?>">
                             <?= esc($faq['question']) ?>
                             <?php if (!empty($faq['axis'])): ?>
                                 <span class="badge bg-secondary ms-2">Eixo: <?= esc($faq['axis']) ?></span>
