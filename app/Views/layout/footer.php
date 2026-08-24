@@ -36,6 +36,13 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.evidence-form').forEach(function (wrapperEl) {
+      var modalEl = wrapperEl.closest('.modal');
+      if (modalEl && modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+      }
+    });
+
     function initTooltips() {
       var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
       tooltipTriggerList.forEach(function (tooltipTriggerEl) {
@@ -53,6 +60,96 @@
     }
 
     initTooltips();
+    document.querySelectorAll('.questionnaire-sn-card').forEach(function (cardEl) {
+      var checkedInput = cardEl.querySelector('.questionnaire-sn-input:checked');
+      cardEl.dataset.savedAnswer = checkedInput ? checkedInput.value : '';
+    });
+
+    document.querySelectorAll('.questionnaire-sn-input').forEach(function (inputEl) {
+      inputEl.addEventListener('change', function () {
+        if (!inputEl.checked) {
+          return;
+        }
+
+        var questionnaireForm = inputEl.closest('form');
+        var cardEl = inputEl.closest('.questionnaire-sn-card');
+        var saveUrl = questionnaireForm ? (questionnaireForm.dataset.answerSaveUrl || '') : '';
+        var questionId = (inputEl.name || '').replace('questao_', '');
+
+        if (!saveUrl || !cardEl || !questionId) {
+          return;
+        }
+
+        var statusEl = cardEl.querySelector('.questionnaire-answer-status');
+        if (!statusEl) {
+          statusEl = document.createElement('div');
+          statusEl.className = 'questionnaire-answer-status small fw-semibold mt-3';
+          var optionsEl = cardEl.querySelector('.questionnaire-sn-options');
+          if (optionsEl) {
+            optionsEl.insertAdjacentElement('afterend', statusEl);
+          }
+        }
+
+        var radioInputs = cardEl.querySelectorAll('.questionnaire-sn-input');
+        radioInputs.forEach(function (radioEl) {
+          radioEl.disabled = true;
+        });
+
+        statusEl.className = 'questionnaire-answer-status small fw-semibold mt-3 text-primary';
+        statusEl.textContent = 'Salvando resposta...';
+
+        var requestData = {
+          question_id: questionId,
+          resposta: inputEl.value
+        };
+
+        console.groupCollapsed('AJAX: salvando resposta');
+        console.log('Endpoint:', saveUrl);
+        console.table(requestData);
+        console.groupEnd();
+
+        fetch(saveUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new URLSearchParams(requestData).toString()
+        })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error('Falha ao salvar a resposta.');
+            }
+            return response.json();
+          })
+          .then(function (result) {
+            console.log('AJAX: resposta recebida', result);
+            if (!result.saved) {
+              throw new Error(result.message || 'Falha ao salvar a resposta.');
+            }
+            cardEl.dataset.savedAnswer = inputEl.value;
+            statusEl.className = 'questionnaire-answer-status small fw-semibold mt-3 text-success';
+            statusEl.textContent = 'Resposta salva.';
+          })
+          .catch(function (error) {
+
+            console.error('AJAX: erro ao salvar resposta', error);
+            var savedInput = cardEl.querySelector('.questionnaire-sn-input[value="' + cardEl.dataset.savedAnswer + '"]');
+            inputEl.checked = false;
+            if (savedInput) {
+              savedInput.checked = true;
+            }
+            statusEl.className = 'questionnaire-answer-status small fw-semibold mt-3 text-danger';
+            statusEl.textContent = 'Nao foi possivel salvar. Tente novamente.';
+          })
+          .finally(function () {
+            radioInputs.forEach(function (radioEl) {
+              radioEl.disabled = false;
+            });
+          });
+      });
+    });
 
     document.querySelectorAll('.evidence-edit-btn').forEach(function (buttonEl) {
       buttonEl.addEventListener('click', function () {

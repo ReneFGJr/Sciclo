@@ -28,6 +28,7 @@ $routes->group('application', function($routes) {
     $routes->match(['get', 'post'], 'form/(:num)', 'Application::form/$1');
     $routes->match(['get', 'post'], 'form/select/(:num)', 'Application::selectQuestionnaire/$1');
     $routes->post('submit_questionnaire', 'Application::submitQuestionnaire');
+    $routes->post('answer/save', 'Application::saveQuestionnaireAnswer');
     $routes->post('evidence/save', 'Application::saveEvidence');
     $routes->post('evidence/delete/(:num)', 'Application::deleteEvidence/$1');
 });

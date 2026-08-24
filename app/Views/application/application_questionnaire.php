@@ -53,7 +53,17 @@ echo view('layout/navbar');
     </aside>
 
     <section class="col-lg-9">
-      <form method="post" action="<?= base_url('application/submit_questionnaire') ?>">
+      <?php foreach ($questions ?? [] as $question): ?>
+        <?php
+          $evidenceQuestionId = (int) ($question['id'] ?? 0);
+          $hasEvidenceForm = trim((string) ($question['nivel2'] ?? '')) !== '';
+        ?>
+        <?php if ($hasEvidenceForm && $evidenceQuestionId > 0): ?>
+          <form id="evidence-form-<?= esc((string) $evidenceQuestionId) ?>"></form>
+        <?php endif; ?>
+      <?php endforeach; ?>
+
+      <form method="post" action="<?= base_url('application/submit_questionnaire') ?>" data-answer-save-url="<?= base_url('application/answer/save') ?>">
         <input type="hidden" name="current_axis" value="<?= esc((string) ($current_axis ?? '')) ?>">
 
         <?php if (!empty($questions)): ?>

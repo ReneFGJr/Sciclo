@@ -147,6 +147,64 @@ class Application extends Controller
         return view('application/application_select_questionnaire', $data);
     }
 
+    public function saveQuestionnaireAnswer()
+    {
+        $repoId = (int) (session()->get('repo_id') ?? 0);
+        if ($repoId <= 0) {
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON(['saved' => false, 'message' => 'Selecione um reposit?rio antes de responder.']);
+        }
+
+        $questionId = (int) ($this->request->getPost('question_id') ?? 0);
+        $answerValue = trim((string) ($this->request->getPost('resposta') ?? ''));
+
+        $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
+        $question = $questionModel->find($questionId);
+
+        if (! $question || ($question['tipo_resposta'] ?? '') === 'INFO' || $answerValue === '') {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON(['saved' => false, 'message' => 'Resposta inv?lida.']);
+        }
+
+        if (($question['tipo_resposta'] ?? '') === 'SN' && ! in_array($answerValue, ['1', '2'], true)) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON(['saved' => false, 'message' => 'Op??o de resposta inv?lida.']);
+        }
+
+        $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
+        $existing = $answersModel
+            ->where('oai_pmh_id', $repoId)
+            ->where('questao_id', $questionId)
+            ->first();
+
+        $payload = [
+            'oai_pmh_id' => $repoId,
+            'questao_id' => $questionId,
+            'resposta' => $answerValue,
+        ];
+
+        if (! empty($existing['id'])) {
+            $saved = $answersModel->update((int) $existing['id'], $payload);
+        } else {
+            $saved = $answersModel->insert($payload) !== false;
+        }
+
+        if (! $saved) {
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON(['saved' => false, 'message' => 'N?o foi poss?vel salvar a resposta.']);
+        }
+
+        return $this->response->setJSON([
+            'saved' => true,
+            'question_id' => $questionId,
+            'resposta' => $answerValue,
+        ]);
+    }
+
     public function submitQuestionnaire()
     {
         $repoId = (int) (session()->get('repo_id') ?? 0);

@@ -9,6 +9,7 @@ if ($nivel2Vazio) {
 
 $questionId = (int) ($q['id'] ?? 0);
 $modalId = 'evidenceModal' . $questionId;
+$evidenceFormId = 'evidence-form-' . $questionId;
 $questionEvidences = isset($q['evidencias']) && is_array($q['evidencias']) ? $q['evidencias'] : [];
 $existingEvidences = isset($q['existing_evidences']) && is_array($q['existing_evidences']) ? $q['existing_evidences'] : [];
 $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis'] : '';
@@ -92,7 +93,7 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                     <?php if (!empty($existingEvidences)): ?>
                         <div class="mb-3">
                             <label class="form-label" for="evidence_existing_<?= esc((string) $questionId) ?>">Reutilizar evidência já cadastrada</label>
-                            <select class="form-select evidence-existing-select" id="evidence_existing_<?= esc((string) $questionId) ?>" name="evidence_id">
+                            <select class="form-select evidence-existing-select" id="evidence_existing_<?= esc((string) $questionId) ?>" name="evidence_id" form="<?= esc($evidenceFormId) ?>">
                                 <option value="">Nova evidência</option>
                                 <?php foreach ($existingEvidences as $evidence): ?>
                                     <option
@@ -108,7 +109,7 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
 
                     <div class="mb-3">
                         <label class="form-label" for="evidence_url_<?= esc((string) $questionId) ?>">URL da evidência</label>
-                        <input type="url" class="form-control evidence-url" id="evidence_url_<?= esc((string) $questionId) ?>" name="url" placeholder="https://..." required>
+                        <input type="url" class="form-control evidence-url" id="evidence_url_<?= esc((string) $questionId) ?>" name="url" form="<?= esc($evidenceFormId) ?>" placeholder="https://..." required>
                     </div>
 
                     <div class="mb-3">
