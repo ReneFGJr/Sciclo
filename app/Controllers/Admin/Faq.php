@@ -9,7 +9,7 @@ class Faq extends BaseController
     public function index()
     {
         $model = new FaqQuestionModel();
-        $data['faqs'] = $model->findAll();
+        $data['faqs'] = $model->orderBy('ordem', 'ASC')->orderBy('id', 'ASC')->findAll();
         return view('admin/faq_list', $data);
     }
 
@@ -22,6 +22,7 @@ class Faq extends BaseController
                 'question' => $this->request->getPost('question'),
                 'answer'   => $this->request->getPost('answer'),
                 'axis'     => $this->request->getPost('axis'),
+                'ordem'    => (int) $this->request->getPost('ordem'),
             ];
             $model->insert($data);
             return redirect()->to(base_url('/admin/faq'))->with('success', 'Questão adicionada com sucesso!');
@@ -41,6 +42,7 @@ class Faq extends BaseController
                 'question' => $this->request->getPost('question'),
                 'answer'   => $this->request->getPost('answer'),
                 'axis'     => $this->request->getPost('axis'),
+                'ordem'    => (int) $this->request->getPost('ordem'),
             ];
             $model->update($id, $data);
             return redirect()->to(base_url('/admin/faq'))->with('success', 'Questão atualizada com sucesso!');

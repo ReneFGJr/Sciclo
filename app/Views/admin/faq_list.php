@@ -14,6 +14,7 @@
                 <th>Pergunta</th>
                 <th>Resposta</th>
                 <th>Eixo</th>
+                <th>Ordem</th>
                 <th style="width:140px">Ações</th>
             </tr>
         </thead>
@@ -25,6 +26,7 @@
                         <td><?= esc($faq['question']) ?></td>
                         <td><?= esc($faq['answer']) ?></td>
                         <td><?= esc($faq['axis']) ?></td>
+                        <td><?= esc($faq['ordem']) ?></td>
                         <td>
                             <a href="<?= base_url('/admin/faq/edit/' . $faq['id']) ?>" class="btn btn-sm btn-primary me-1" title="Editar">
                                 <i class="bi bi-pencil"></i>
@@ -36,7 +38,7 @@
                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="5">Nenhuma pergunta cadastrada.</td></tr>
+                <tr><td colspan="6">Nenhuma pergunta cadastrada.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

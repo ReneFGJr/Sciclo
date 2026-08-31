@@ -26,7 +26,7 @@ class About extends Controller
     public function faq()
     {
         $model = new \App\Models\FaqQuestionModel();
-        $data['faqs'] = $model->findAll();
+        $data['faqs'] = $model->orderBy('ordem', 'ASC')->orderBy('id', 'ASC')->findAll();
         return view('about/faq', $data);
     }
 

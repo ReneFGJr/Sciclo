@@ -11,6 +11,7 @@ class FaqQuestionModel extends Model
         'question',
         'answer',
         'axis',
+        'ordem',
         'created_at',
         'updated_at',
     ];
