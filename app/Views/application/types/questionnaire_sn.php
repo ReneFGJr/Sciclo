@@ -231,7 +231,7 @@ $q['alternativas'] = [
         <div class='questionnaire-sn-comment'>
             <label class='form-label fw-semibold' for='comentario_<?= esc($questionIdText) ?>'>Coment&#225;rios</label>
             <textarea class='form-control questionnaire-sn-comment-input' name='comentario_<?= esc($questionIdText) ?>' id='comentario_<?= esc($questionIdText) ?>' maxlength='10000' placeholder='Adicione um coment&#225;rio sobre esta resposta (opcional).'><?= esc($savedComment) ?></textarea>
-            <div class='form-text'>O coment&#225;rio ser&#225; salvo junto com a resposta.</div>
+            <div class='form-text'>O coment&#225;rio ser&#225; salvo junto com a resposta. (opcional)</div>
         </div>
         <?= view('application/types/questionnaire_evidence', ['q' => $q]) ?>
     </div>

@@ -152,6 +152,17 @@
       });
     });
 
+    document.querySelectorAll('.questionnaire-sn-comment-input').forEach(function (commentEl) {
+      commentEl.addEventListener('blur', function () {
+        var cardEl = commentEl.closest('.questionnaire-sn-card');
+        var checkedInput = cardEl ? cardEl.querySelector('.questionnaire-sn-input:checked') : null;
+
+        if (checkedInput) {
+          checkedInput.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
     document.querySelectorAll('.evidence-edit-btn').forEach(function (buttonEl) {
       buttonEl.addEventListener('click', function () {
         var modalSelector = buttonEl.getAttribute('data-modal-target') || '';
