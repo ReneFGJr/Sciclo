@@ -37,13 +37,34 @@ echo view('layout/navbar');
         <div class="list-group list-group-flush">
           <?php if (!empty($axes)): ?>
             <?php foreach ($axes as $axis): ?>
-              <?php $axisKey = (string) ($axis['eixo'] ?? ''); ?>
-              <a
-                href="<?= base_url('application/form/' . $axisKey) ?>"
-                class="list-group-item list-group-item-action <?= ((string) ($current_axis ?? '') === $axisKey) ? 'active' : '' ?>">
-                <div class="fw-semibold">Eixo <?= esc($axisKey) ?></div>
-                <small><?= nl2br(glossario_conteudo($axis['titulo'] ?? '')) ?></small>
-              </a>
+              <?php
+                $axisKey = (string) ($axis['eixo'] ?? '');
+                $isCurrentAxis = (string) ($current_axis ?? '') === $axisKey;
+                $submenuId = 'axis-submenu-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', $axisKey);
+              ?>
+              <div class="list-group-item p-0 <?= $isCurrentAxis ? 'border-primary' : '' ?>">
+                <div class="d-flex align-items-stretch">
+                  <a href="<?= base_url('application/form/' . $axisKey) ?>" class="list-group-item-action p-3 text-decoration-none <?= $isCurrentAxis ? 'bg-primary text-white' : 'text-body' ?>">
+                    <div class="fw-semibold">Eixo <?= esc($axisKey) ?></div>
+                    <small><?= nl2br(glossario_conteudo($axis['titulo'] ?? '')) ?></small>
+                  </a>
+                  <?php if (!empty($axis['sublevels'])): ?>
+                    <button class="btn <?= $isCurrentAxis ? 'btn-primary' : 'btn-light' ?> rounded-0 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#<?= esc($submenuId) ?>" aria-expanded="<?= $isCurrentAxis ? 'true' : 'false' ?>" aria-controls="<?= esc($submenuId) ?>" aria-label="Mostrar critérios do eixo <?= esc($axisKey) ?>">&#9662;</button>
+                  <?php endif; ?>
+                </div>
+
+                <?php if (!empty($axis['sublevels'])): ?>
+                  <div id="<?= esc($submenuId) ?>" class="collapse <?= $isCurrentAxis ? 'show' : '' ?>">
+                    <div class="list-group list-group-flush border-top">
+                      <?php foreach ($axis['sublevels'] as $sublevel): ?>
+                        <a class="list-group-item list-group-item-action ps-4 py-2 small <?= $isCurrentAxis && (string) ($current_level2 ?? '') === (string) $sublevel['nivel2'] ? 'active' : '' ?>" href="<?= base_url('application/form/' . $axisKey . '/' . $sublevel['nivel2']) ?>">
+                          <strong><?= esc($sublevel['criterio']) ?></strong> - <?= esc($sublevel['titulo']) ?>
+                        </a>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                <?php endif; ?>
+              </div>
             <?php endforeach; ?>
           <?php else: ?>
             <div class="list-group-item">Nenhum eixo encontrado.</div>
@@ -65,6 +86,7 @@ echo view('layout/navbar');
 
       <form method="post" action="<?= base_url('application/submit_questionnaire') ?>" data-answer-save-url="<?= base_url('application/answer/save') ?>">
         <input type="hidden" name="current_axis" value="<?= esc((string) ($current_axis ?? '')) ?>">
+        <input type="hidden" name="current_level2" value="<?= esc((string) ($current_level2 ?? '')) ?>">
 
         <?php if (!empty($questions)): ?>
           <?php $level2SectionOpen = false; $currentLevel2 = null; ?>
@@ -88,7 +110,8 @@ echo view('layout/navbar');
                 echo '</div></section>';
               }
 
-              echo '<section class="border rounded-4 p-3 p-md-4 mb-5 bg-light">';
+              $sectionId = 'nivel2-' . ($q['nivel1'] ?? '') . '-' . $level2;
+              echo '<section id="' . esc($sectionId) . '" class="border rounded-4 p-3 p-md-4 mb-5 bg-light scroll-margin-top">';
               echo '<h2 class="h3 mb-4">' . esc(($q['nivel1'] ?? '') . '.' . $level2) . ' - ' . glossario_conteudo($q['questao'] ?? '') . '</h2>';
               echo '<div class="level-3-question-group">';
               $level2SectionOpen = true;

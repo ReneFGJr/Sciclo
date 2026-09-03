@@ -59,8 +59,42 @@ class Application extends Controller
         $axes = array_values($axesMap);
         usort($axes, static fn (array $a, array $b): int => strnatcmp((string) $a['eixo'], (string) $b['eixo']));
 
+        $level2Rows = $questionModel
+            ->select('nivel1, nivel2, criterio, questao')
+            ->where('nivel2 !=', '')
+            ->where('nivel3 !=', '')
+            ->findAll();
+
+        $level2ByAxis = [];
+        foreach ($level2Rows as $row) {
+            $axisKey = trim((string) ($row['nivel1'] ?? ''));
+            $level2Key = trim((string) ($row['nivel2'] ?? ''));
+            if ($axisKey === '' || $level2Key === '' || isset($level2ByAxis[$axisKey][$level2Key])) {
+                continue;
+            }
+
+            $level2ByAxis[$axisKey][$level2Key] = [
+                'nivel2' => $level2Key,
+                'criterio' => (string) ($row['criterio'] ?? ''),
+                'titulo' => (string) ($row['questao'] ?? ''),
+            ];
+        }
+
+        foreach ($axes as &$axis) {
+            $sublevels = array_values($level2ByAxis[(string) $axis['eixo']] ?? []);
+            usort($sublevels, static fn (array $a, array $b): int => strnatcmp($a['nivel2'], $b['nivel2']));
+            $axis['sublevels'] = $sublevels;
+        }
+        unset($axis);
+
         if ((int) $c1 <= 0 && ! empty($axes)) {
             $c1 = (int) $axes[0]['eixo'];
+        }
+
+        $currentSublevels = array_values($level2ByAxis[(string) $c1] ?? []);
+        usort($currentSublevels, static fn (array $a, array $b): int => strnatcmp($a['nivel2'], $b['nivel2']));
+        if ((int) $c2 <= 0 && ! empty($currentSublevels)) {
+            $c2 = (int) $currentSublevels[0]['nivel2'];
         }
 
         $questions = $questionModel->where('nivel1', (string) $c1)->findAll();
@@ -74,6 +108,13 @@ class Application extends Controller
 
             return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
         });
+
+        if ((int) $c2 > 0) {
+            $questions = array_values(array_filter($questions, static function (array $question) use ($c2): bool {
+                $level2 = trim((string) ($question['nivel2'] ?? ''));
+                return $level2 === '' || $level2 === (string) $c2;
+            }));
+        }
 
         $savedAnswers = [];
         $savedComments = [];
@@ -123,6 +164,7 @@ class Application extends Controller
             'questions' => $questions,
             'axes' => $axes,
             'current_axis' => $currentAxis,
+            'current_level2' => (string) $c2,
             'next_axis' => $nextAxis,
             'saved_answers' => $savedAnswers,
             'saved_comments' => $savedComments,
@@ -219,6 +261,7 @@ class Application extends Controller
         }
 
         $currentAxis = trim((string) ($this->request->getPost('current_axis') ?? ''));
+        $currentLevel2 = trim((string) ($this->request->getPost('current_level2') ?? ''));
         if ($currentAxis === '') {
             return redirect()->to(base_url('application/form/1'));
         }
@@ -228,6 +271,11 @@ class Application extends Controller
         $postData = $this->request->getPost();
 
         $axisQuestions = $questionModel->where('nivel1', $currentAxis)->findAll();
+        if ($currentLevel2 !== '') {
+            $axisQuestions = array_values(array_filter($axisQuestions, static function (array $question) use ($currentLevel2): bool {
+                return trim((string) ($question['nivel2'] ?? '')) === $currentLevel2;
+            }));
+        }
         $missingAnswers = [];
 
         foreach ($axisQuestions as $question) {
@@ -245,7 +293,8 @@ class Application extends Controller
 
         if (! empty($missingAnswers)) {
             session()->setFlashdata('questionnaire_error', 'Preencha todas as respostas obrigatórias antes de continuar.');
-            return redirect()->to(base_url('application/form/' . $currentAxis));
+            $returnPath = 'application/form/' . $currentAxis . ($currentLevel2 !== '' ? '/' . $currentLevel2 : '');
+            return redirect()->to(base_url($returnPath));
         }
 
         foreach ($postData as $field => $value) {
@@ -299,6 +348,36 @@ class Application extends Controller
             }
         }
 
+        $level2Rows = $questionModel
+            ->select('nivel2')
+            ->where('nivel1', $currentAxis)
+            ->where('nivel2 !=', '')
+            ->findAll();
+
+        $level2Map = [];
+        foreach ($level2Rows as $row) {
+            $level2 = trim((string) ($row['nivel2'] ?? ''));
+            if ($level2 !== '') {
+                $level2Map[$level2] = true;
+            }
+        }
+
+        $level2Pages = array_keys($level2Map);
+        usort($level2Pages, static fn (string $a, string $b): int => strnatcmp($a, $b));
+
+        $nextLevel2 = null;
+        foreach ($level2Pages as $index => $level2) {
+            if ($level2 === $currentLevel2 && isset($level2Pages[$index + 1])) {
+                $nextLevel2 = $level2Pages[$index + 1];
+                break;
+            }
+        }
+
+        if ($nextLevel2 !== null) {
+            session()->setFlashdata('questionnaire_success', 'Respostas salvas. Você avançou para o próximo grupo.');
+            return redirect()->to(base_url('application/form/' . $currentAxis . '/' . $nextLevel2));
+        }
+
         $axisRows = $questionModel
             ->select('nivel1')
             ->where('nivel2', '')
@@ -332,7 +411,8 @@ class Application extends Controller
         }
 
         session()->setFlashdata('questionnaire_success', 'Respostas salvas. Questionário finalizado.');
-        return redirect()->to(base_url('application/form/' . $currentAxis));
+        $returnPath = 'application/form/' . $currentAxis . ($currentLevel2 !== '' ? '/' . $currentLevel2 : '');
+        return redirect()->to(base_url($returnPath));
     }
 
     public function saveEvidence()
