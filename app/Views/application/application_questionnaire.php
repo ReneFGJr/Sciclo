@@ -67,6 +67,7 @@ echo view('layout/navbar');
         <input type="hidden" name="current_axis" value="<?= esc((string) ($current_axis ?? '')) ?>">
 
         <?php if (!empty($questions)): ?>
+          <?php $level2SectionOpen = false; ?>
           <?php foreach ($questions as $q): ?>
             <?php
             $qid = (int) ($q['id'] ?? 0);
@@ -78,6 +79,22 @@ echo view('layout/navbar');
             $q['evidence_flash_question'] = $evidenceFlashQuestion;
             $q['evidence_flash_error'] = $evidenceFlashError;
             $q['evidence_flash_success'] = $evidenceFlashSuccess;
+            $isLevel2Heading = ($q['tipo_resposta'] ?? '') === 'INFO'
+              && trim((string) ($q['nivel2'] ?? '')) !== ''
+              && trim((string) ($q['nivel3'] ?? '')) === '';
+
+            if ($isLevel2Heading) {
+              if ($level2SectionOpen) {
+                echo '</div></section>';
+              }
+
+              $level2 = trim((string) ($q['nivel2'] ?? ''));
+              echo '<section class="border rounded-4 p-3 p-md-4 mb-5 bg-light">';
+              echo '<h2 class="h3 mb-4">' . esc($level2) . ' - ' . glossario_conteudo($q['questao'] ?? '') . '</h2>';
+              echo '<div class="level-3-question-group">';
+              $level2SectionOpen = true;
+              continue;
+            }
             switch ($q['tipo_resposta']) {
               case 'INFO':
                 echo view('application/types/questionnaire_info', ['q' => $q]);
@@ -91,6 +108,10 @@ echo view('layout/navbar');
             }
             ?>
           <?php endforeach; ?>
+
+          <?php if ($level2SectionOpen): ?>
+            </div></section>
+          <?php endif; ?>
 
           <div class="d-flex justify-content-end gap-2">
             <button type="submit" class="btn btn-primary">Salvar e continuar</button>

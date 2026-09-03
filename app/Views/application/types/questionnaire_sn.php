@@ -182,7 +182,7 @@ $selectedAnswer = is_scalar($q['saved_answer'] ?? null) ? trim((string) $q['save
 $savedComment = is_scalar($q['saved_comment'] ?? null) ? (string) $q['saved_comment'] : '';
 $animationDelay = (($questionId % 5) * 90) . 'ms';
 $enunciado = $q['questao'] ?? '';
-$criterio = $q['criterio'] ?? '';
+$nivel3 = trim((string) ($q['nivel3'] ?? ''));
 $q['alternativas'] = [
     ['id' => 1, 'texto' => 'Sim'],
     ['id' => 2, 'texto' => 'Não']
@@ -191,8 +191,7 @@ $q['alternativas'] = [
 
 <div class="card mb-4 questionnaire-sn-card" style="animation-delay: <?= esc($animationDelay) ?>;">
     <div class="card-body">
-        <span class="questionnaire-sn-badge">Critério #<?= esc($criterio) ?></span>
-        <h5 class="questionnaire-sn-title"><?= nl2br(glossario_conteudo($enunciado)) ?></h5>
+        <h5 class="questionnaire-sn-title"><?= $nivel3 !== '' ? esc($nivel3) . ' - ' : '' ?><?= nl2br(glossario_conteudo($enunciado)) ?></h5>
         <p class="questionnaire-sn-subtitle"><?= nl2br(glossario_conteudo($questionDescription)) ?></p>
 
         <?php if (!empty($q['alternativas'])): ?>
