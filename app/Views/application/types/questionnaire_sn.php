@@ -181,7 +181,6 @@ $questionDescription = is_scalar($q['descricao'] ?? null) ? (string) $q['descric
 $selectedAnswer = is_scalar($q['saved_answer'] ?? null) ? trim((string) $q['saved_answer']) : '';
 $savedComment = is_scalar($q['saved_comment'] ?? null) ? (string) $q['saved_comment'] : '';
 $animationDelay = (($questionId % 5) * 90) . 'ms';
-$enunciado = $q['questao'] ?? '';
 $nivel3 = trim((string) ($q['nivel3'] ?? ''));
 $q['alternativas'] = [
     ['id' => 1, 'texto' => 'Sim'],
@@ -191,8 +190,7 @@ $q['alternativas'] = [
 
 <div class="card mb-4 questionnaire-sn-card" style="animation-delay: <?= esc($animationDelay) ?>;">
     <div class="card-body">
-        <h5 class="questionnaire-sn-title"><?= $nivel3 !== '' ? esc($nivel3) . ' - ' : '' ?><?= nl2br(glossario_conteudo($enunciado)) ?></h5>
-        <p class="questionnaire-sn-subtitle"><?= nl2br(glossario_conteudo($questionDescription)) ?></p>
+        <p class="questionnaire-sn-subtitle"><?= $nivel3 !== '' ? '<strong>' . esc($nivel3) . ' - </strong>' : '' ?><?= nl2br(glossario_conteudo($questionDescription)) ?></p>
 
         <?php if (!empty($q['alternativas'])): ?>
             <div class="questionnaire-sn-options" role="radiogroup" aria-label="Questão <?= esc($questionIdText) ?>">

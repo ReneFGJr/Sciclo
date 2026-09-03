@@ -67,7 +67,7 @@ echo view('layout/navbar');
         <input type="hidden" name="current_axis" value="<?= esc((string) ($current_axis ?? '')) ?>">
 
         <?php if (!empty($questions)): ?>
-          <?php $level2SectionOpen = false; ?>
+          <?php $level2SectionOpen = false; $currentLevel2 = null; ?>
           <?php foreach ($questions as $q): ?>
             <?php
             $qid = (int) ($q['id'] ?? 0);
@@ -79,21 +79,20 @@ echo view('layout/navbar');
             $q['evidence_flash_question'] = $evidenceFlashQuestion;
             $q['evidence_flash_error'] = $evidenceFlashError;
             $q['evidence_flash_success'] = $evidenceFlashSuccess;
-            $isLevel2Heading = ($q['tipo_resposta'] ?? '') === 'INFO'
-              && trim((string) ($q['nivel2'] ?? '')) !== ''
-              && trim((string) ($q['nivel3'] ?? '')) === '';
+            $level2 = trim((string) ($q['nivel2'] ?? ''));
+            $level3 = trim((string) ($q['nivel3'] ?? ''));
+            $startsLevel2Group = $level2 !== '' && $level3 !== '' && $level2 !== $currentLevel2;
 
-            if ($isLevel2Heading) {
+            if ($startsLevel2Group) {
               if ($level2SectionOpen) {
                 echo '</div></section>';
               }
 
-              $level2 = trim((string) ($q['nivel2'] ?? ''));
               echo '<section class="border rounded-4 p-3 p-md-4 mb-5 bg-light">';
-              echo '<h2 class="h3 mb-4">' . esc($level2) . ' - ' . glossario_conteudo($q['questao'] ?? '') . '</h2>';
+              echo '<h2 class="h3 mb-4">' . esc(($q['nivel1'] ?? '') . '.' . $level2) . ' - ' . glossario_conteudo($q['questao'] ?? '') . '</h2>';
               echo '<div class="level-3-question-group">';
               $level2SectionOpen = true;
-              continue;
+              $currentLevel2 = $level2;
             }
             switch ($q['tipo_resposta']) {
               case 'INFO':
