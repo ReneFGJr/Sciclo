@@ -76,11 +76,13 @@ class Application extends Controller
         });
 
         $savedAnswers = [];
+        $savedComments = [];
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId > 0) {
             $answers = $answerModel->where('oai_pmh_id', $repoId)->findAll();
             foreach ($answers as $answer) {
                 $savedAnswers[(int) $answer['questao_id']] = (string) $answer['resposta'];
+                $savedComments[(int) $answer['questao_id']] = (string) ($answer['comentario'] ?? '');
             }
         }
 
@@ -123,6 +125,7 @@ class Application extends Controller
             'current_axis' => $currentAxis,
             'next_axis' => $nextAxis,
             'saved_answers' => $savedAnswers,
+            'saved_comments' => $savedComments,
             'existing_evidences' => $existingEvidences,
             'evidences_by_question' => $evidencesByQuestion,
         ]);
@@ -158,6 +161,7 @@ class Application extends Controller
 
         $questionId = (int) ($this->request->getPost('question_id') ?? 0);
         $answerValue = trim((string) ($this->request->getPost('resposta') ?? ''));
+        $comment = trim((string) ($this->request->getPost('comentario') ?? ''));
 
         $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
         $question = $questionModel->find($questionId);
@@ -184,6 +188,7 @@ class Application extends Controller
             'oai_pmh_id' => $repoId,
             'questao_id' => $questionId,
             'resposta' => $answerValue,
+            'comentario' => $comment !== '' ? $comment : null,
         ];
 
         if (! empty($existing['id'])) {
@@ -202,6 +207,7 @@ class Application extends Controller
             'saved' => true,
             'question_id' => $questionId,
             'resposta' => $answerValue,
+            'comentario' => $comment,
         ]);
     }
 
@@ -272,6 +278,19 @@ class Application extends Controller
                 'questao_id' => $questionId,
                 'resposta' => $answerValue,
             ];
+
+            $question = null;
+            foreach ($axisQuestions as $axisQuestion) {
+                if ((int) ($axisQuestion['id'] ?? 0) === $questionId) {
+                    $question = $axisQuestion;
+                    break;
+                }
+            }
+
+            if (($question['tipo_resposta'] ?? '') === 'SN') {
+                $comment = trim((string) ($postData['comentario_' . $questionId] ?? ''));
+                $payload['comentario'] = $comment !== '' ? $comment : null;
+            }
 
             if (! empty($existing['id'])) {
                 $answersModel->update((int) $existing['id'], $payload);

@@ -12,6 +12,7 @@ class CertificacaoQuestoesAnswerModel extends Model
         'oai_pmh_id',
         'questao_id',
         'resposta',
+        'comentario',
         'created_at',
         'updated_at',
     ];

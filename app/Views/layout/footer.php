@@ -100,7 +100,8 @@
 
         var requestData = {
           question_id: questionId,
-          resposta: inputEl.value
+          resposta: inputEl.value,
+          comentario: (cardEl.querySelector('.questionnaire-sn-comment-input') || {}).value || ''
         };
 
         console.groupCollapsed('AJAX: salvando resposta');

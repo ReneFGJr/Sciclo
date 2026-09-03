@@ -71,6 +71,7 @@ echo view('layout/navbar');
             <?php
             $qid = (int) ($q['id'] ?? 0);
             $q['saved_answer'] = $saved_answers[$qid] ?? null;
+            $q['saved_comment'] = $saved_comments[$qid] ?? null;
             $q['evidencias'] = $evidences_by_question[$qid] ?? [];
             $q['existing_evidences'] = $existing_evidences ?? [];
             $q['current_axis'] = $current_axis ?? '';

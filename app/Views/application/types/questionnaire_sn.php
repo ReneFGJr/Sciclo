@@ -52,6 +52,15 @@ $q = isset($q) && is_array($q) ? $q : [];
             gap: 1rem;
         }
 
+        .questionnaire-sn-comment {
+            margin-top: 1.25rem;
+        }
+
+        .questionnaire-sn-comment textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
         .questionnaire-sn-input {
             position: absolute;
             opacity: 0;
@@ -170,6 +179,7 @@ $questionId = (int) ($q['id'] ?? 0);
 $questionIdText = (string) $questionId;
 $questionDescription = is_scalar($q['descricao'] ?? null) ? (string) $q['descricao'] : '';
 $selectedAnswer = is_scalar($q['saved_answer'] ?? null) ? trim((string) $q['saved_answer']) : '';
+$savedComment = is_scalar($q['saved_comment'] ?? null) ? (string) $q['saved_comment'] : '';
 $animationDelay = (($questionId % 5) * 90) . 'ms';
 $enunciado = $q['questao'] ?? '';
 $criterio = $q['criterio'] ?? '';
@@ -218,6 +228,11 @@ $q['alternativas'] = [
             </div>
         <?php endif; ?>
 
+        <div class='questionnaire-sn-comment'>
+            <label class='form-label fw-semibold' for='comentario_<?= esc($questionIdText) ?>'>Coment&#225;rios</label>
+            <textarea class='form-control questionnaire-sn-comment-input' name='comentario_<?= esc($questionIdText) ?>' id='comentario_<?= esc($questionIdText) ?>' maxlength='10000' placeholder='Adicione um coment&#225;rio sobre esta resposta (opcional).'><?= esc($savedComment) ?></textarea>
+            <div class='form-text'>O coment&#225;rio ser&#225; salvo junto com a resposta.</div>
+        </div>
         <?= view('application/types/questionnaire_evidence', ['q' => $q]) ?>
     </div>
 </div>
