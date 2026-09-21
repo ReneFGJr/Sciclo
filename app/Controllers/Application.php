@@ -410,7 +410,30 @@ class Application extends Controller
             return redirect()->to(base_url('application/form/' . $nextAxis));
         }
 
-        session()->setFlashdata('questionnaire_success', 'Respostas salvas. Questionário finalizado.');
+        // Only mark the repository as submitted when every required answer is saved.
+        $requiredQuestions = $questionModel->where('tipo_resposta !=', 'INFO')->findAll();
+        $savedAnswers = $answersModel->where('oai_pmh_id', $repoId)->findAll();
+        $answeredIds = [];
+        foreach ($savedAnswers as $answer) {
+            if (trim((string) $answer['resposta']) !== '' && $answer['resposta'] !== '[]') {
+                $answeredIds[(int) $answer['questao_id']] = true;
+            }
+        }
+        $complete = !empty($requiredQuestions);
+        foreach ($requiredQuestions as $question) {
+            if (!isset($answeredIds[(int) $question['id']])) {
+                $complete = false;
+                break;
+            }
+        }
+        if (!$complete) {
+            return redirect()->to(base_url('application/form/1'))
+                ->with('questionnaire_error', 'Existem respostas pendentes. Complete todas as etapas antes de enviar para avaliação.');
+        }
+        $repositoryModel = new \App\Models\Oai_pmh\OaiPmhModel();
+        $repositoryModel->where('id', $repoId)->where('submitted_at', null)
+            ->set(['submitted_at' => date('Y-m-d H:i:s')])->update();
+        session()->setFlashdata('questionnaire_success', 'Questionário finalizado e enviado para avaliação.');
         $returnPath = 'application/form/' . $currentAxis . ($currentLevel2 !== '' ? '/' . $currentLevel2 : '');
         return redirect()->to(base_url($returnPath));
     }

@@ -19,6 +19,7 @@
             <li><a class="dropdown-item" href="<?= base_url(); ?>/about">Sobre nós</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/about/certification">Sobre a certificação</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/about/faq">FAQ</a></li>
+            <li><a class="dropdown-item" href="<?= base_url('about/team') ?>">Equipe</a></li>
           </ul>
         </li>
         <li class="nav-item">
@@ -53,6 +54,7 @@
             <?php $canManageUsers = (new \App\Models\UserRuleModel())->isAdministrator((int) session('user_id')); ?>
             <?php if ($canManageUsers): ?>
             <li><a class="dropdown-item" href="<?= base_url('admin/users') ?>">Usuários</a></li>
+            <li><a class="dropdown-item" href="<?= base_url('repositories') ?>">Repositórios (Gestão)</a></li>
             <?php endif; ?>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/glossario">Editar Glossário</a></li>

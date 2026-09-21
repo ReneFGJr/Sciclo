@@ -11,6 +11,19 @@ class About extends Controller
         return view('about/about_project');
     }
 
+    public function team()
+    {
+        $assignments = (new \App\Models\UserRuleModel())
+            ->select('users.name AS user_name, rules.name AS rule_name, user_rules.starts_at, user_rules.ends_at')
+            ->join('users', 'users.id = user_rules.user_id')
+            ->join('rules', 'rules.id = user_rules.rule_id')
+            ->orderBy('users.name', 'ASC')
+            ->orderBy('user_rules.starts_at', 'DESC')
+            ->orderBy('rules.name', 'ASC')
+            ->findAll();
+
+        return view('about/team', ['assignments' => $assignments, 'today' => date('Y-m-d')]);
+    }
     public function contact()
     {
         return view('about/contact');

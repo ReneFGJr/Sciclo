@@ -15,6 +15,7 @@ $routes->group('about', function ($routes) {
     $routes->get('/', 'About::about_project');
     $routes->get('certification', 'About::certification');
     $routes->get('faq', 'About::faq');
+    $routes->get('team', 'About::team');
     $routes->get('contact', 'About::contact');
 });
 $routes->get('faq', 'About::faq');
@@ -63,3 +64,5 @@ $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($rout
     $routes->match(['get', 'post'], 'config/rules/edit/(:num)', 'Admin\Rules::edit/$1');
     $routes->post('config/rules/delete/(:num)', 'Admin\Rules::delete/$1');
 });
+$routes->get('repositories', 'Repositories::index', ['filter' => 'administrator']);
+$routes->get('repositories/(:num)', 'Repositories::show/$1', ['filter' => 'administrator']);

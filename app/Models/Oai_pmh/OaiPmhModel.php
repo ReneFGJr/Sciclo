@@ -12,6 +12,7 @@ class OaiPmhModel extends Model
     protected $allowedFields = [
                 'base_url',
                 'status',
+                'submitted_at',
                 'repository_type',
                 'base_url_oai',
                 'repository_name',
