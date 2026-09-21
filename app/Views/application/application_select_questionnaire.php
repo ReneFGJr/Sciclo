@@ -16,6 +16,7 @@ echo view('layout/navbar');
                         <option value="publicacao" <?= $selectedType === 'publicacao' ? 'selected' : ''; ?>>Certificação de Repositório de Publicação</option>
                         <option value="dados" <?= $selectedType === 'dados' ? 'selected' : ''; ?>>Certificação de Repositório de Dados</option>
                         <option value="ambos" <?= $selectedType === 'ambos' ? 'selected' : ''; ?>>Certificação de Repositório de Publicação e Dados</option>
+                        <option value="ambos" <?= $selectedType === 'arquivistico' ? 'selected' : ''; ?>>Certificação de Repositório Arquivístico</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg px-5">Iniciar</button>
