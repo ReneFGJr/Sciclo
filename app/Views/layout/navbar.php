@@ -50,9 +50,17 @@
             Administrador
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
+            <?php $canManageUsers = (new \App\Models\UserRuleModel())->isAdministrator((int) session('user_id')); ?>
+            <?php if ($canManageUsers): ?>
+            <li><a class="dropdown-item" href="<?= base_url('admin/users') ?>">Usuários</a></li>
+            <?php endif; ?>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/glossario">Editar Glossário</a></li>
             <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/faq">Editar FAQ</a></li>
+            <?php if ($canManageUsers): ?>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="<?= base_url('admin/config') ?>">Configurações</a></li>
+            <?php endif; ?>
           </ul>
         </li>
         <?php endif; ?>

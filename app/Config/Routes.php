@@ -50,3 +50,16 @@ $routes->group('admin', function ($routes) {
 });
 
 $routes->match(['get', 'post'], 'contact', 'About::contact');
+$routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($routes) {
+    $routes->get('users', 'Admin\Users::index');
+    $routes->match(['get', 'post'], 'users/create', 'Admin\Users::create');
+    $routes->match(['get', 'post'], 'users/edit/(:num)', 'Admin\Users::edit/$1');
+    $routes->post('users/delete/(:num)', 'Admin\Users::delete/$1');
+    $routes->post('users/(:num)/rules', 'Admin\Users::assignRule/$1');
+    $routes->post('users/(:num)/rules/(:num)/delete', 'Admin\Users::deleteRule/$1/$2');
+    $routes->get('config', 'Admin\Rules::config');
+    $routes->get('config/rules', 'Admin\Rules::index');
+    $routes->match(['get', 'post'], 'config/rules/create', 'Admin\Rules::create');
+    $routes->match(['get', 'post'], 'config/rules/edit/(:num)', 'Admin\Rules::edit/$1');
+    $routes->post('config/rules/delete/(:num)', 'Admin\Rules::delete/$1');
+});
