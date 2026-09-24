@@ -40,6 +40,7 @@ class Repositories extends BaseController
             'criteriaGroups' => $criteriaGroups,
             'answers' => $answers,
             'evidencesByQuestion' => $evidencesByQuestion,
+            'summary' => \App\Libraries\RepositorySummary::build($criteriaGroups, $answers, $evidencesByQuestion),
         ]);
     }
     public function index()

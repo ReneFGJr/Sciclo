@@ -25,6 +25,9 @@ $fields = [
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="repository-data-tab" data-bs-toggle="tab" data-bs-target="#repository-data" type="button" role="tab" aria-controls="repository-data" aria-selected="true">Dados do repositório</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="repository-summary-tab" data-bs-toggle="tab" data-bs-target="#repository-summary" type="button" role="tab" aria-controls="repository-summary" aria-selected="false">Resumo</button>
+        </li>
         <?php $tabIndex = 0; foreach ($criteriaGroups as $level => $questions): $tabIndex++; ?>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="criteria-<?= $tabIndex ?>-tab" data-bs-toggle="tab" data-bs-target="#criteria-<?= $tabIndex ?>" type="button" role="tab" aria-controls="criteria-<?= $tabIndex ?>" aria-selected="false">Critérios <?= esc((string) $level) ?></button>
@@ -32,6 +35,9 @@ $fields = [
         <?php endforeach; ?>
     </ul>
     <div class="tab-content">
+    <div class="tab-pane fade" id="repository-summary" role="tabpanel" aria-labelledby="repository-summary-tab" tabindex="0">
+        <?= view('repositories/summary', ['summary' => $summary]) ?>
+    </div>
     <div class="tab-pane fade show active" id="repository-data" role="tabpanel" aria-labelledby="repository-data-tab" tabindex="0">
     <div class="card shadow-sm">
         <div class="card-body">

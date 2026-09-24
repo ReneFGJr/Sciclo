@@ -53,9 +53,45 @@ class Auth extends Controller
         return view('auth/forgot');
     }
 
+    public function profile()
+    {
+        if (!session('logged_in')) {
+            return redirect()->to(site_url('login'));
+        }
+
+        $user = (new UserModel())->select('id, name, email')->find((int) session('user_id'));
+        if (!$user) {
+            session()->destroy();
+            return redirect()->to(site_url('login'));
+        }
+
+        $assignments = (new \App\Models\UserRuleModel())
+            ->select('rules.name, user_rules.starts_at, user_rules.ends_at')
+            ->join('rules', 'rules.id = user_rules.rule_id')
+            ->where('user_rules.user_id', $user['id'])
+            ->orderBy('user_rules.starts_at', 'DESC')
+            ->findAll();
+        $today = date('Y-m-d');
+        foreach ($assignments as &$assignment) {
+            if ($assignment['ends_at'] < $today) {
+                $assignment['status'] = 'Expirado';
+                $assignment['statusClass'] = 'bg-danger';
+            } elseif ($assignment['starts_at'] > $today) {
+                $assignment['status'] = 'Ainda não ativo';
+                $assignment['statusClass'] = 'bg-secondary';
+            } else {
+                $assignment['status'] = 'Ativo';
+                $assignment['statusClass'] = 'bg-success';
+            }
+        }
+        unset($assignment);
+
+        return view('auth/profile', ['user' => $user, 'assignments' => $assignments]);
+    }
+
     public function logout()
     {
         session()->destroy();
-        return redirect()->to('/');
+        return redirect()->to(base_url());
     }
 }

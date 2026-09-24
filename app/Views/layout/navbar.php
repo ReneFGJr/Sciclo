@@ -51,6 +51,8 @@
             Administrador
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
+            <li><a class="dropdown-item" href="<?= site_url('profile') ?>">Meu perfil</a></li>
+            <li><hr class="dropdown-divider"></li>
             <?php $canManageUsers = (new \App\Models\UserRuleModel())->isAdministrator((int) session('user_id')); ?>
             <?php if ($canManageUsers): ?>
             <li><a class="dropdown-item" href="<?= base_url('admin/users') ?>">Usuários</a></li>
@@ -63,6 +65,8 @@
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="<?= base_url('admin/config') ?>">Configurações</a></li>
             <?php endif; ?>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="<?= site_url('logout') ?>">Sair</a></li>
           </ul>
         </li>
         <?php endif; ?>

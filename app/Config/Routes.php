@@ -10,6 +10,7 @@ $routes->match(['get', 'post'], 'login', 'Auth::login');
 $routes->match(['get', 'post'], 'register', 'Auth::register');
 $routes->match(['get', 'post'], 'forgot', 'Auth::forgot');
 $routes->get('logout', 'Auth::logout');
+$routes->get('profile', 'Auth::profile');
 $routes->get('seal-statistics', 'SealStatistics::index');
 $routes->group('about', function ($routes) {
     $routes->get('/', 'About::about_project');
