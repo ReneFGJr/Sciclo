@@ -4,7 +4,7 @@
   <h1 class="h2 mb-4">Meu perfil</h1>
   <div class="row g-4">
     <div class="col-lg-6">
-      <div class="card shadow-sm p-4">
+      <div class="card shadow-sm p-4" id="my-repositories">
       <h2 class="h4 mb-3">Meus repositórios</h2>
       <?php if (!$repositories): ?>
         <div class="card shadow-sm p-4">
