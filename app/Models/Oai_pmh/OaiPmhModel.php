@@ -15,6 +15,8 @@ class OaiPmhModel extends Model
                 'submitted_at',
                 'submitted_by',
                 'repository_type',
+                'repository_software',
+                'repository_software_version',
                 'base_url_oai',
                 'repository_name',
                 'protocol_version',
@@ -152,7 +154,55 @@ class OaiPmhModel extends Model
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
-        return ['status' => '200', 'message' => 'Resposta HTTP ' . $httpCode];
+        return ['status' => '200', 'message' => 'Resposta HTTP ' . $httpCode,
+            'identify_xml' => (string) $response,
+            'software' => self::identifySoftware($xml)];
+    }
+
+    public static function identifySoftware(SimpleXMLElement $xml): array
+    {
+        $descriptions = $xml->xpath('/*[local-name()="OAI-PMH"]/*[local-name()="Identify"]/*[local-name()="description"]');
+        foreach ($descriptions ?: [] as $description) {
+            $text = $description->asXML();
+            foreach (['DSpace', 'EPrints', 'Fedora', 'Invenio', 'Dataverse', 'CKAN'] as $name) {
+                if (!preg_match('/\b' . preg_quote($name, '/') . '\b/i', $text)) {
+                    continue;
+                }
+                $version = null;
+                $softwareNodes = $description->xpath('.//*[local-name()="software"]');
+                foreach ($softwareNodes ?: [] as $software) {
+                    $names = $software->xpath('./*[local-name()="name" or local-name()="softwareName"]');
+                    if ($names && strcasecmp(trim((string) $names[0]), $name) === 0) {
+                        $versions = $software->xpath('./*[local-name()="version" or local-name()="softwareVersion"]');
+                        $version = $versions ? trim((string) $versions[0]) : null;
+                    }
+                }
+                if (!$version && preg_match('/\b' . preg_quote($name, '/') . '\s*(?:version\s*|v\s*)?([0-9]+(?:\.[0-9]+)*(?:[-+][a-z0-9.]+)?)/i', strip_tags($text), $matches)) {
+                    $version = $matches[1];
+                }
+                return ['name' => $name, 'version' => $version ?: null];
+            }
+        }
+        return [];
+    }
+
+    private function saveIdentification(int $idRepo, string $url, array $result): void
+    {
+        $fields = ['base_url_oai' => $url, 'status' => 1, 'raw_identify_xml' => $result['identify_xml']];
+        $software = $result['software'] ?? [];
+        if ($software) {
+            $record = $this->db->table('repository_software')->where('name', $software['name'])->get()->getRowArray();
+            if ($record) {
+                $current = $this->find($idRepo);
+                $fields['repository_software'] = $record['id'];
+                if ($software['version'] !== null && strlen($software['version']) <= 10) {
+                    $fields['repository_software_version'] = $software['version'];
+                } elseif ((int) ($current['repository_software'] ?? 0) !== (int) $record['id']) {
+                    $fields['repository_software_version'] = null;
+                }
+            }
+        }
+        $this->update($idRepo, $fields);
     }
 
     public static function oaiCandidates(string $url): array
@@ -196,9 +246,18 @@ class OaiPmhModel extends Model
                 if ($baseUrl === '') {
                     return ['status' => '500', 'message' => 'Não foi possível identificar um endpoint OAI-PMH válido.'];
                 }
-                $this->update($idRepo, ['base_url_oai' => $baseUrl, 'status' => 1]);
+                $this->saveIdentification((int) $idRepo, $baseUrl, $dt);
                 return ['status' => '200', 'message' => 'Endpoint OAI-PMH identificado: ' . $baseUrl];
             } else {
+                $url = preg_replace('/([?&])verb=[^&]*/i', '$1verb=Identify', $data['base_url_oai']);
+                if (!preg_match('/[?&]verb=/i', $url)) {
+                    $url .= (str_contains($url, '?') ? '&' : '?') . 'verb=Identify';
+                }
+                $result = $this->validURLOAI($url);
+                if ($result['status'] !== '200') {
+                    return $result;
+                }
+                $this->saveIdentification((int) $idRepo, $url, $result);
                 return ['status' => '200', 'message' => 'Endpoint OAI-PMH já identificado: ' . $data['base_url_oai']];
             }
     }
