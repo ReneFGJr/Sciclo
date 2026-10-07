@@ -141,7 +141,40 @@ class OaiPmhModel extends Model
         if ($httpCode >= 400) {
             return ['status' => '500', 'message' => 'Resposta HTTP ' . $httpCode];
         }
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $xml = simplexml_load_string((string) $response, SimpleXMLElement::class, LIBXML_NONET);
+            if ($xml === false || $xml->getName() !== 'OAI-PMH'
+                || !$xml->xpath('/*[local-name()="OAI-PMH"]/*[local-name()="Identify"]')) {
+                return ['status' => '500', 'message' => 'A URL não retornou uma resposta OAI-PMH Identify válida.'];
+            }
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
         return ['status' => '200', 'message' => 'Resposta HTTP ' . $httpCode];
+    }
+
+    public static function oaiCandidates(string $url): array
+    {
+        $parts = parse_url(trim($url));
+        if (!$parts || empty($parts['scheme']) || empty($parts['host'])) {
+            return [];
+        }
+        $origin = $parts['scheme'] . '://' . $parts['host']
+            . (isset($parts['port']) ? ':' . $parts['port'] : '');
+        $path = rtrim($parts['path'] ?? '', '/');
+        $bases = [$origin . preg_replace('~/(home|xmlui|jspui)$~i', '', $path), $origin];
+        $candidates = [];
+        if (preg_match('~/((server/)?oai(-pmh)?(/request)?)$~i', $path)) {
+            $candidates[] = $origin . $path . '?verb=Identify';
+        }
+        foreach (array_unique($bases) as $base) {
+            foreach (['server/oai/request', 'oai/request', 'oai', 'oai-pmh', 'oai-pmh/request', 'xmlui/oai/request', 'xmlui/oai-pmh/request', 'jspui/oai/request'] as $suffix) {
+                $candidates[] = $base . '/' . $suffix . '?verb=Identify';
+            }
+        }
+        return array_values(array_unique($candidates));
     }
 
     function getIdentifyOAI($idRepo)
@@ -149,30 +182,18 @@ class OaiPmhModel extends Model
         $data = $this->find($idRepo);
         if ($data['base_url_oai'] == '')
             {
-                $baseUrl = trim($data['base_url']);
-                if (substr($baseUrl, -1) != '/') {
-                    $baseUrl .= '/';
-                }
-
-                /***************************************************  */
-                $sufix = ["oai", "oai-pmh", "oai/request", "oai-pmh/request", "xmlui/oai/request", "xmlui/oai-pmh/request"];
-                foreach ($sufix as $suf) {
-                    // Garante que haja uma barra entre baseUrl e o sufixo
-                    $testUrl = $baseUrl . ltrim($suf, '/').'?verb=Identify';
-                    echo '<h5>' . $suf . ' - ' . $testUrl . '</h5>';
-                    echo '<h5>'.$baseUrl.'</h5>';
-                    if ($this->validURL($testUrl)) {
+                $baseUrl = '';
+                foreach (self::oaiCandidates($data['base_url']) as $testUrl) {
+                    echo '<h5>' . esc($testUrl) . '</h5>';
                         $dt = $this->validURLOAI($testUrl);
                         echo view('components/message', ['status' => $dt['status'], 'message' => $testUrl . ' - ' . $dt['message']]);
                         if ($dt['status'] == '200') {
                             $baseUrl = $testUrl;
                             break;
                         }
-                        //$baseUrl = $testUrl;
-                    }
                 }
 
-                if ($dt['status'] != '200') {
+                if ($baseUrl === '') {
                     return ['status' => '500', 'message' => 'Não foi possível identificar um endpoint OAI-PMH válido.'];
                 }
                 $this->update($idRepo, ['base_url_oai' => $baseUrl, 'status' => 1]);
