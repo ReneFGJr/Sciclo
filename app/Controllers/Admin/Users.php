@@ -18,6 +18,32 @@ class Users extends BaseController
     public function create() { return $this->form(); }
     public function edit($id) { return $this->form((int) $id); }
 
+    public function accessAs($id)
+    {
+        $administratorId = (int) session('user_id');
+        if (!$this->request->is('post') || !session('logged_in')
+            || session('impersonator_id')
+            || !(new UserRuleModel())->isAdministrator($administratorId)) {
+            return $this->response->setStatusCode(403)->setBody('Acesso restrito ao administrador.');
+        }
+        $user = $this->user((int) $id);
+        if ((int) $user['id'] === $administratorId) {
+            return redirect()->to(site_url('admin/users'));
+        }
+        $session = session();
+        $session->regenerate(true);
+        $session->set([
+            'impersonator_id' => $administratorId,
+            'impersonator_repo_id' => $session->get('repo_id'),
+            'user_id' => $user['id'],
+            'user_name' => $user['name'],
+            'logged_in' => true,
+        ]);
+        $session->remove('repo_id');
+        log_message('notice', 'Administrador {admin} acessou como usuário {user}.', ['admin' => $administratorId, 'user' => $user['id']]);
+        return redirect()->to(site_url('profile'));
+    }
+
     private function user(int $id): array
     {
         return (new UserModel())->find($id) ?? throw PageNotFoundException::forPageNotFound();

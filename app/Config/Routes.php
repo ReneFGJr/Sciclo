@@ -11,6 +11,7 @@ $routes->match(['get', 'post'], 'register', 'Auth::register');
 $routes->match(['get', 'post'], 'forgot', 'Auth::forgot');
 $routes->get('logout', 'Auth::logout');
 $routes->get('profile', 'Auth::profile');
+$routes->post('access-as/stop', 'Auth::stopAccessAs', ['filter' => 'csrf']);
 $routes->get('seal-statistics', 'SealStatistics::index');
 $routes->group('about', function ($routes) {
     $routes->get('/', 'About::about_project');
@@ -55,6 +56,7 @@ $routes->match(['get', 'post'], 'contact', 'About::contact');
 $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($routes) {
     $routes->get('/', 'Admin\Rules::config');
     $routes->get('users', 'Admin\Users::index');
+    $routes->post('users/(:num)/access-as', 'Admin\Users::accessAs/$1');
     $routes->match(['get', 'post'], 'users/create', 'Admin\Users::create');
     $routes->match(['get', 'post'], 'users/edit/(:num)', 'Admin\Users::edit/$1');
     $routes->post('users/delete/(:num)', 'Admin\Users::delete/$1');

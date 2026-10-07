@@ -71,3 +71,14 @@
     </div>
   </div>
 </nav>
+<?php if (session('logged_in') && session('impersonator_id')): ?>
+<div class="container mb-3">
+  <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
+    <span>Acessando como <strong><?= esc(session('user_name')) ?></strong>.</span>
+    <form class="mb-0" method="post" action="<?= site_url('access-as/stop') ?>">
+      <?= csrf_field() ?>
+      <button class="btn btn-sm btn-outline-dark" type="submit">Voltar ao administrador</button>
+    </form>
+  </div>
+</div>
+<?php endif; ?>

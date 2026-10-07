@@ -17,6 +17,8 @@ class Auth extends Controller
             $userModel = new UserModel();
             $user = $userModel->where('email', $email)->first();
             if ($user && password_verify($password, $user['password'])) {
+                session()->remove(['impersonator_id', 'impersonator_repo_id', 'repo_id']);
+                session()->regenerate(true);
                 session()->set([
                     'user_id' => $user['id'],
                     'user_name' => $user['name'],
@@ -162,5 +164,28 @@ class Auth extends Controller
     {
         session()->destroy();
         return redirect()->to(base_url());
+    }
+
+    public function stopAccessAs()
+    {
+        if (!$this->request->is('post') || !session('logged_in') || !session('impersonator_id')) {
+            return $this->response->setStatusCode(403)->setBody('Nenhum acesso como usuário ativo.');
+        }
+        $administratorId = (int) session('impersonator_id');
+        $administrator = (new UserModel())->find($administratorId);
+        if (!$administrator || !(new \App\Models\UserRuleModel())->isAdministrator($administratorId)) {
+            session()->destroy();
+            return redirect()->to(site_url('login'));
+        }
+        $session = session();
+        $repositoryId = $session->get('impersonator_repo_id');
+        $session->regenerate(true);
+        $session->remove(['impersonator_id', 'impersonator_repo_id', 'repo_id']);
+        $session->set(['user_id' => $administrator['id'], 'user_name' => $administrator['name'], 'logged_in' => true]);
+        if ($repositoryId) {
+            $session->set('repo_id', $repositoryId);
+        }
+        log_message('notice', 'Administrador {admin} encerrou o acesso como usuário.', ['admin' => $administratorId]);
+        return redirect()->to(site_url('admin/users'));
     }
 }
