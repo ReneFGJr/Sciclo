@@ -61,7 +61,7 @@ class Auth extends Controller
 
                 throw $exception;
             }
-            return redirect()->to('/login');
+            return redirect()->to(site_url('login'));
         }
         return view('auth/register');
     }

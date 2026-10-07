@@ -8,7 +8,7 @@
         <?php if (!empty($error)): ?>
           <div class="alert alert-danger" role="alert"><?= esc($error) ?></div>
         <?php endif; ?>
-        <form method="post" action="/register">
+        <form method="post" action="<?= site_url('register') ?>">
           <div class="mb-3">
             <label for="name" class="form-label">Nome</label>
             <input type="text" class="form-control" id="name" name="name" value="<?= esc($name ?? '', 'attr') ?>" required autofocus>
@@ -24,7 +24,7 @@
           <button type="submit" class="btn btn-success w-100">Cadastrar</button>
         </form>
         <div class="mt-3 text-center">
-          <a href="<?= base_url(); ?>/login" class="small">Já tem conta? Entrar</a>
+          <a href="<?= site_url('login') ?>" class="small">Já tem conta? Entrar</a>
         </div>
       </div>
     </div>

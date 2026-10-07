@@ -19,7 +19,7 @@
           </div>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <a href="<?= base_url(); ?>/forgot" class="small">Esqueceu a senha?</a>
-            <a href="<?= base_url(); ?>/register" class="small">Cadastrar-se</a>
+            <a href="<?= site_url('register') ?>" class="small">Cadastrar-se</a>
           </div>
           <button type="submit" class="btn btn-primary w-100">Entrar</button>
         </form>
