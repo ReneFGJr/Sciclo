@@ -48,7 +48,7 @@
         <?php if (session('logged_in')): ?>
         <li class="nav-item dropdown ms-2">
           <a class="nav-link dropdown-toggle border border-2 border-primary rounded-pill px-3 py-1 text-primary" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Administrador
+            <?= esc(preg_split('/\s+/u', trim((string) session('user_name')), 2)[0]) ?>
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
             <li><a class="dropdown-item" href="<?= site_url('profile') ?>">Meu perfil</a></li>
@@ -58,12 +58,9 @@
             <li><a class="dropdown-item" href="<?= base_url('admin/users') ?>">Usuários</a></li>
             <li><a class="dropdown-item" href="<?= base_url('repositories') ?>">Repositórios (Gestão)</a></li>
             <?php endif; ?>
-            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/questions">Editar questões</a></li>
-            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/glossario">Editar Glossário</a></li>
-            <li><a class="dropdown-item" href="<?= base_url(); ?>/admin/faq">Editar FAQ</a></li>
             <?php if ($canManageUsers): ?>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="<?= base_url('admin/config') ?>">Configurações</a></li>
+            <li><a class="dropdown-item" href="<?= site_url('admin') ?>">Configurações</a></li>
             <?php endif; ?>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="<?= site_url('logout') ?>">Sair</a></li>

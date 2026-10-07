@@ -186,6 +186,9 @@ class Application extends Controller
 
             // Salvar RepoID na sessão
             session()->set('repo_id', $id);
+            if (session('logged_in')) {
+                $OaiPmhModel->registerSubmitter((int) $id, (int) session('user_id'));
+            }
 
             return redirect()->to(base_url('application/form/1'));
         }
@@ -616,6 +619,9 @@ class Application extends Controller
 
         $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
         $RepoID = $OAI->saveURL($repoLink);
+        if ($RepoID && session('logged_in')) {
+            $OAI->registerSubmitter((int) $RepoID, (int) session('user_id'));
+        }
 
         $this->response->setHeader('Content-Type', 'text/html; charset=UTF-8');
         $this->response->setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\UserModel;
+use CodeIgniter\Database\Exceptions\DatabaseException;
 
 class Auth extends Controller
 {
@@ -37,10 +38,29 @@ class Auth extends Controller
             $userModel = new UserModel();
             $data = [
                 'name' => $this->request->getPost('name'),
-                'email' => $this->request->getPost('email'),
+                'email' => trim((string) $this->request->getPost('email')),
                 'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT)
             ];
-            $userModel->insert($data);
+            $duplicateEmail = [
+                'error' => 'Este e-mail já está cadastrado.',
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ];
+            if ($userModel->where('email', $data['email'])->first()) {
+                return view('auth/register', $duplicateEmail);
+            }
+
+            try {
+                $userModel->insert($data);
+            } catch (DatabaseException $exception) {
+                // Handle simultaneous registrations for the same e-mail.
+                if ((int) $exception->getCode() === 1062
+                    && $userModel->where('email', $data['email'])->first()) {
+                    return view('auth/register', $duplicateEmail);
+                }
+
+                throw $exception;
+            }
             return redirect()->to('/login');
         }
         return view('auth/register');
@@ -86,7 +106,56 @@ class Auth extends Controller
         }
         unset($assignment);
 
-        return view('auth/profile', ['user' => $user, 'assignments' => $assignments]);
+        $repositoryModel = new \App\Models\Oai_pmh\OaiPmhModel();
+        $repositoryModel->registerSubmitter((int) session('repo_id'), (int) $user['id']);
+        $repositories = $repositoryModel->where('submitted_by', $user['id'])
+            ->orderBy('id', 'DESC')->findAll();
+        if ($repositories) {
+            $questions = (new \App\Models\Question\CertificacaoQuestoesModel())->findAll();
+            $ids = array_column($repositories, 'id');
+            $answersByRepository = [];
+            foreach ((new \App\Models\Question\CertificacaoQuestoesAnswerModel())->whereIn('oai_pmh_id', $ids)->findAll() as $answer) {
+                $answersByRepository[$answer['oai_pmh_id']][(int) $answer['questao_id']] = $answer;
+            }
+            $evaluationsByRepository = [];
+            foreach ((new \App\Models\RepositoryEvaluationModel())->whereIn('oai_pmh_id', $ids)
+                ->orderBy('round', 'DESC')->findAll() as $evaluation) {
+                $evaluationsByRepository[$evaluation['oai_pmh_id']][] = $evaluation;
+            }
+            foreach ($repositories as &$repository) {
+                $repository['summary'] = \App\Libraries\RepositorySummary::build(
+                    ['all' => $questions], $answersByRepository[$repository['id']] ?? [], []
+                );
+                $repository['evaluationStatus'] = 'Ainda não enviada para avaliação';
+                $repository['evaluationClass'] = 'bg-secondary';
+                if (!empty($repository['submitted_at'])) {
+                    $repository['evaluationStatus'] = 'Aguardando avaliação';
+                    $repository['evaluationClass'] = 'bg-primary';
+                }
+                $evaluations = $evaluationsByRepository[$repository['id']] ?? [];
+                if ($evaluations) {
+                    $latestRound = $evaluations[0]['round'];
+                    $statuses = array_column(array_filter($evaluations, static fn ($item) => $item['round'] === $latestRound), 'status');
+                    if (in_array('in_progress', $statuses, true) || in_array('accepted', $statuses, true)) {
+                        $repository['evaluationStatus'] = 'Avaliação em andamento';
+                        $repository['evaluationClass'] = 'bg-warning text-dark';
+                    } elseif (count(array_filter($statuses, static fn ($status) => $status === 'completed')) === count($statuses)) {
+                        $repository['evaluationStatus'] = 'Avaliação concluída';
+                        $repository['evaluationClass'] = 'bg-success';
+                    } else {
+                        $repository['evaluationStatus'] = 'Aguardando avaliação';
+                        $repository['evaluationClass'] = 'bg-primary';
+                    }
+                }
+                if (!empty($repository['seal_data_avaliation']) && $repository['seal_data_avaliation'] !== '0000-00-00 00:00:00') {
+                    $repository['evaluationStatus'] = 'Avaliação concluída';
+                    $repository['evaluationClass'] = 'bg-success';
+                }
+            }
+            unset($repository);
+        }
+
+        return view('auth/profile', ['user' => $user, 'assignments' => $assignments, 'repositories' => $repositories]);
     }
 
     public function logout()

@@ -53,6 +53,7 @@ $routes->group('admin', function ($routes) {
 
 $routes->match(['get', 'post'], 'contact', 'About::contact');
 $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($routes) {
+    $routes->get('/', 'Admin\Rules::config');
     $routes->get('users', 'Admin\Users::index');
     $routes->match(['get', 'post'], 'users/create', 'Admin\Users::create');
     $routes->match(['get', 'post'], 'users/edit/(:num)', 'Admin\Users::edit/$1');

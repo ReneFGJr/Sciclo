@@ -5,14 +5,17 @@
     <div class="col-md-6 col-lg-5">
       <div class="card shadow-sm p-4">
         <h2 class="mb-4 text-center">Cadastrar-se</h2>
+        <?php if (!empty($error)): ?>
+          <div class="alert alert-danger" role="alert"><?= esc($error) ?></div>
+        <?php endif; ?>
         <form method="post" action="/register">
           <div class="mb-3">
             <label for="name" class="form-label">Nome</label>
-            <input type="text" class="form-control" id="name" name="name" required autofocus>
+            <input type="text" class="form-control" id="name" name="name" value="<?= esc($name ?? '', 'attr') ?>" required autofocus>
           </div>
           <div class="mb-3">
             <label for="email" class="form-label">E-mail</label>
-            <input type="email" class="form-control" id="email" name="email" required>
+            <input type="email" class="form-control" id="email" name="email" value="<?= esc($email ?? '', 'attr') ?>" required>
           </div>
           <div class="mb-3">
             <label for="password" class="form-label">Senha</label>

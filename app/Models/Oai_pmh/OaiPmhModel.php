@@ -13,6 +13,7 @@ class OaiPmhModel extends Model
                 'base_url',
                 'status',
                 'submitted_at',
+                'submitted_by',
                 'repository_type',
                 'base_url_oai',
                 'repository_name',
@@ -26,6 +27,14 @@ class OaiPmhModel extends Model
                 'created_at',
                 'updated_at'];
     public $timestamps = false;
+
+    public function registerSubmitter(int $repositoryId, int $userId): void
+    {
+        if ($repositoryId > 0 && $userId > 0) {
+            $this->where('id', $repositoryId)->where('submitted_by', null)
+                ->set(['submitted_by' => $userId])->update();
+        }
+    }
 
     /**
      * Retorna o total de repositórios avaliados (registros na tabela oai_pmh).

@@ -1,10 +1,47 @@
 <?= view('layout/header') ?>
 <?= view('layout/navbar') ?>
 <div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12">
+  <h1 class="h2 mb-4">Meu perfil</h1>
+  <div class="row g-4">
+    <div class="col-lg-6">
       <div class="card shadow-sm p-4">
-        <h2 class="mb-4">Meu perfil</h2>
+      <h2 class="h4 mb-3">Meus repositórios</h2>
+      <?php if (!$repositories): ?>
+        <div class="card shadow-sm p-4">
+          <p class="text-muted">Você ainda não iniciou uma submissão de repositório.</p>
+          <a class="btn btn-primary align-self-start" href="<?= site_url('application') ?>">Submeter repositório</a>
+        </div>
+      <?php endif; ?>
+      <?php foreach ($repositories as $repository): $summary = $repository['summary']; ?>
+        <article class="card shadow-sm p-4 mb-3">
+          <h3 class="h5"><?= esc($repository['repository_name'] ?: 'Repositório #' . $repository['id']) ?></h3>
+          <p class="text-break mb-2"><?= esc($repository['base_url']) ?></p>
+          <?php if (!empty($repository['repository_type'])): ?>
+            <p class="small text-muted">Tipo: <?= esc($repository['repository_type']) ?></p>
+          <?php endif; ?>
+          <div class="mb-3">
+            <span class="badge <?= esc($repository['evaluationClass'], 'attr') ?>"><?= esc($repository['evaluationStatus']) ?></span>
+          </div>
+          <div class="d-flex justify-content-between gap-2 mb-2">
+            <span>Preenchimento da submissão</span>
+            <strong><?= number_format($summary['completion'], 1, ',', '.') ?>%</strong>
+          </div>
+          <div class="progress" role="progressbar" aria-label="Preenchimento da submissão" aria-valuenow="<?= $summary['completion'] ?>" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width: <?= $summary['completion'] ?>%"></div>
+          </div>
+          <p class="small text-muted mt-2 mb-3"><?= $summary['answered'] ?> de <?= $summary['total'] ?> questões respondidas.</p>
+          <?php if (!empty($repository['submitted_at'])): ?>
+            <p class="small mb-0">Enviado em <?= esc(date('d/m/Y H:i', strtotime($repository['submitted_at']))) ?></p>
+          <?php else: ?>
+            <a class="btn btn-outline-primary align-self-start" href="<?= site_url('application/form/select/' . $repository['id']) ?>">Continuar submissão</a>
+          <?php endif; ?>
+        </article>
+      <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm p-4">
+        <h2 class="h4 mb-4">Meus dados</h2>
         <dl class="mb-4">
           <dt>Nome</dt>
           <dd><?= esc($user['name']) ?></dd>
