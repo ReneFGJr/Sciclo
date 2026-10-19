@@ -127,6 +127,11 @@ class Application extends Controller
             }
         }
 
+        $skippedIds = $repoId > 0 ? $this->saveSkippedAnswers($repoId) : [];
+        foreach ($skippedIds as $skippedId) {
+            $savedAnswers[$skippedId] = '2';
+        }
+
         $existingEvidences = $repoId > 0
             ? $evidenceModel
                 ->where('oai_pmh_id', $repoId)
@@ -166,7 +171,10 @@ class Application extends Controller
             'current_axis' => $currentAxis,
             'current_level2' => (string) $c2,
             'next_axis' => $nextAxis,
+            'highlight_pending' => $repoId > 0 && (int) session()->get('questionnaire_pending_repo') === $repoId,
+            'questionnaire_progress' => $this->questionnaireProgress($repoId),
             'saved_answers' => $savedAnswers,
+            'skipped_question_ids' => $skippedIds,
             'saved_comments' => $savedComments,
             'existing_evidences' => $existingEvidences,
             'evidences_by_question' => $evidencesByQuestion,
@@ -177,6 +185,9 @@ class Application extends Controller
     {
         $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
         $data['repo'] = $OAI->find($id);
+        if (!$data['repo']) {
+            return redirect()->to(site_url('application'));
+        }
 
         $method = strtolower($this->request->getMethod());
 
@@ -192,7 +203,71 @@ class Application extends Controller
 
             return redirect()->to(base_url('application/form/1'));
         }
+        $software = \Config\Database::connect()->table('repository_software')
+            ->select('name')
+            ->where('id', (int) ($data['repo']['repository_software'] ?? 0))
+            ->get()->getRowArray();
+        $data['repo']['repository_software_name'] = $software['name'] ?? '';
+        $this->saveSkippedAnswers((int) $id);
+        $data['progress'] = $this->questionnaireProgress((int) $id);
+        $data['metadataFormats'] = (new \App\Models\Oai_pmh\OaiPmhMetadataModel())
+            ->where('oai_pmh_id', (int) $id)
+            ->orderBy('metadata_prefix', 'ASC')
+            ->findAll();
         return view('application/application_select_questionnaire', $data);
+    }
+
+    private function questionnaireProgress(int $repoId): array
+    {
+        $questions = (new \App\Models\Question\CertificacaoQuestoesModel())->findAll();
+        $answers = [];
+        if ($repoId > 0) {
+            foreach ((new \App\Models\Question\CertificacaoQuestoesAnswerModel())->where('oai_pmh_id', $repoId)->findAll() as $answer) {
+                $answers[(int) $answer['questao_id']] = $answer;
+            }
+        }
+        $groups = [];
+        $axisTitles = [];
+        foreach ($questions as $question) {
+            $level1 = trim((string) ($question['nivel1'] ?? ''));
+            if (trim((string) ($question['nivel2'] ?? '')) === '' && !empty($question['questao'])) {
+                $axisTitles[$level1] = trim(strip_tags((string) $question['questao']));
+            }
+            if (($question['tipo_resposta'] ?? '') === 'INFO') continue;
+            $groups[$level1][] = $question;
+        }
+        uksort($groups, static fn ($a, $b): int => strnatcmp((string) $a, (string) $b));
+        $summary = \App\Libraries\RepositorySummary::build($groups, $answers, []);
+        $progress = array_intersect_key($summary, array_flip(['total', 'answered', 'pending', 'completion', 'groups']));
+        $progress['axis_titles'] = $axisTitles;
+        return $progress;
+    }
+
+    private function saveSkippedAnswers(int $repoId): array
+    {
+        $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
+        $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
+        $answers = [];
+        $existingByQuestion = [];
+        foreach ($answersModel->where('oai_pmh_id', $repoId)->findAll() as $answer) {
+            $id = (int) $answer['questao_id'];
+            $answers[$id] = (string) $answer['resposta'];
+            $existingByQuestion[$id] = $answer;
+        }
+        $skippedIds = \App\Libraries\QuestionnaireBranching::skippedIds($questionModel->findAll(), $answers);
+        foreach ($skippedIds as $id) {
+            if (($answers[$id] ?? '') === '2') {
+                continue;
+            }
+            $payload = ['oai_pmh_id' => $repoId, 'questao_id' => $id, 'resposta' => '2'];
+            $saved = isset($existingByQuestion[$id])
+                ? $answersModel->update((int) $existingByQuestion[$id]['id'], $payload)
+                : $answersModel->insert($payload) !== false;
+            if (!$saved) {
+                throw new \RuntimeException('Falha ao salvar as respostas das questoes puladas.');
+            }
+        }
+        return $skippedIds;
     }
 
     public function saveQuestionnaireAnswer()
@@ -248,11 +323,15 @@ class Application extends Controller
                 ->setJSON(['saved' => false, 'message' => 'N?o foi poss?vel salvar a resposta.']);
         }
 
+        $skippedIds = $this->saveSkippedAnswers($repoId);
+
         return $this->response->setJSON([
             'saved' => true,
             'question_id' => $questionId,
             'resposta' => $answerValue,
             'comentario' => $comment,
+            'skipped_ids' => $skippedIds,
+            'progress' => $this->questionnaireProgress($repoId),
         ]);
     }
 
@@ -272,12 +351,25 @@ class Application extends Controller
         $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
         $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
         $postData = $this->request->getPost();
+        $saveForLater = ($postData['save_for_later'] ?? '') === '1';
 
         $axisQuestions = $questionModel->where('nivel1', $currentAxis)->findAll();
         if ($currentLevel2 !== '') {
             $axisQuestions = array_values(array_filter($axisQuestions, static function (array $question) use ($currentLevel2): bool {
                 return trim((string) ($question['nivel2'] ?? '')) === $currentLevel2;
             }));
+        }
+        $branchAnswers = [];
+        foreach ($answersModel->where('oai_pmh_id', $repoId)->findAll() as $answer) {
+            $branchAnswers[(int) $answer['questao_id']] = (string) $answer['resposta'];
+        }
+        foreach ($postData as $field => $value) {
+            if (strpos((string) $field, 'questao_') === 0 && is_scalar($value)) {
+                $branchAnswers[(int) substr($field, 8)] = (string) $value;
+            }
+        }
+        foreach (\App\Libraries\QuestionnaireBranching::skippedIds($questionModel->findAll(), $branchAnswers) as $skippedId) {
+            $postData['questao_' . $skippedId] = '2';
         }
         $missingAnswers = [];
 
@@ -294,7 +386,8 @@ class Application extends Controller
             }
         }
 
-        if (! empty($missingAnswers)) {
+        if (!$saveForLater && ! empty($missingAnswers)) {
+            session()->set('questionnaire_pending_repo', $repoId);
             session()->setFlashdata('questionnaire_error', 'Preencha todas as respostas obrigatórias antes de continuar.');
             $returnPath = 'application/form/' . $currentAxis . ($currentLevel2 !== '' ? '/' . $currentLevel2 : '');
             return redirect()->to(base_url($returnPath));
@@ -351,6 +444,12 @@ class Application extends Controller
             }
         }
 
+        $this->saveSkippedAnswers($repoId);
+
+        if ($saveForLater) {
+            return redirect()->to(base_url('/'));
+        }
+
         $level2Rows = $questionModel
             ->select('nivel2')
             ->where('nivel1', $currentAxis)
@@ -365,7 +464,7 @@ class Application extends Controller
             }
         }
 
-        $level2Pages = array_keys($level2Map);
+        $level2Pages = array_map('strval', array_keys($level2Map));
         usort($level2Pages, static fn (string $a, string $b): int => strnatcmp($a, $b));
 
         $nextLevel2 = null;
@@ -394,7 +493,7 @@ class Application extends Controller
             }
         }
 
-        $axes = array_keys($axesMap);
+        $axes = array_map('strval', array_keys($axesMap));
         usort($axes, static fn (string $a, string $b): int => strnatcmp($a, $b));
 
         $nextAxis = null;
@@ -418,21 +517,37 @@ class Application extends Controller
         $savedAnswers = $answersModel->where('oai_pmh_id', $repoId)->findAll();
         $answeredIds = [];
         foreach ($savedAnswers as $answer) {
-            if (trim((string) $answer['resposta']) !== '' && $answer['resposta'] !== '[]') {
+            $value = trim((string) $answer['resposta']);
+            $decoded = json_decode($value, true);
+            if ($value !== '' && !(is_array($decoded) && $decoded === [])) {
                 $answeredIds[(int) $answer['questao_id']] = true;
             }
         }
-        $complete = !empty($requiredQuestions);
-        foreach ($requiredQuestions as $question) {
-            if (!isset($answeredIds[(int) $question['id']])) {
-                $complete = false;
-                break;
+        $pendingQuestions = array_values(array_filter($requiredQuestions, static function (array $question) use ($answeredIds): bool {
+            return !isset($answeredIds[(int) $question['id']]);
+        }));
+        usort($pendingQuestions, static function (array $a, array $b): int {
+            foreach (['nivel1', 'nivel2', 'nivel3'] as $field) {
+                $cmp = strnatcmp((string) ($a[$field] ?? ''), (string) ($b[$field] ?? ''));
+                if ($cmp !== 0) return $cmp;
             }
+            return (int) $a['id'] <=> (int) $b['id'];
+        });
+        if ($pendingQuestions !== []) {
+            session()->set('questionnaire_pending_repo', $repoId);
+            $firstPending = $pendingQuestions[0];
+            $pendingAxis = (string) $firstPending['nivel1'];
+            $pendingLevel = trim((string) ($firstPending['nivel2'] ?? ''));
+            $pendingPath = 'application/form/' . rawurlencode($pendingAxis)
+                . ($pendingLevel !== '' ? '/' . rawurlencode($pendingLevel) : '')
+                . '#question-' . (int) $firstPending['id'];
+            $message = 'Existem respostas pendentes. Complete todas as etapas antes de enviar para avaliação. '
+                . 'Você foi direcionado ao eixo ' . $pendingAxis
+                . ($pendingLevel !== '' ? ', grupo ' . $pendingLevel : '')
+                . ', com questões em aberto destacadas em vermelho. Faltam ' . count($pendingQuestions) . ' questões no questionário.';
+            return redirect()->to(base_url($pendingPath))->with('questionnaire_error', $message);
         }
-        if (!$complete) {
-            return redirect()->to(base_url('application/form/1'))
-                ->with('questionnaire_error', 'Existem respostas pendentes. Complete todas as etapas antes de enviar para avaliação.');
-        }
+        session()->remove('questionnaire_pending_repo');
         $repositoryModel = new \App\Models\Oai_pmh\OaiPmhModel();
         $repositoryModel->where('id', $repoId)->where('submitted_at', null)
             ->set(['submitted_at' => date('Y-m-d H:i:s')])->update();
@@ -646,6 +761,7 @@ class Application extends Controller
         flush();
 
 
+        $oaiResult = null;
         for ($i = 0; $i < 10; $i++) {
             echo '<p>Processando o repositório... (Passo ' . ($i + 1) . ' de 10) -';
             switch ($i) {
@@ -655,19 +771,26 @@ class Application extends Controller
                     break;
                 case 1:
                     echo 'Identificando OAI-PMH do repositório...';
-                    echo $this->message($OAI->getIdentifyOAI($RepoID));
+                    $oaiResult = $OAI->getIdentifyOAI($RepoID);
+                    echo view('components/message', ['status' => $oaiResult['status'], 'message' => $oaiResult['message']]);
                     break;
                 case 2:
-                    echo 'Validando dados...';
+                    echo 'Validando dados e identificando o software do reposit&#243;rio...';
+                    echo $this->message($OAI->detectRepositorySoftware((int) $RepoID));
+                    if (($oaiResult['status'] ?? '500') !== '200') {
+                        $this->message($oaiResult);
+                    }
                     break;
                 case 3:
-                    echo 'Gerando relatórios...';
+                    echo 'Gerando relatórios e consultando os formatos de metadados OAI-PMH...';
+                    echo $this->message($OAI->collectMetadataFormats((int) $RepoID));
                     break;
                 case 4:
                     echo 'Salvando resultados...';
                     break;
                 case 5:
-                    echo 'Enviando notificações...';
+                    echo 'Validando o certificado SSL do reposit&#243;rio...';
+                    echo view('components/message', $OAI->validateRepositorySsl((int) $RepoID));
                     break;
                 case 6:
                     echo 'Finalizando processo...';

@@ -9,6 +9,45 @@ echo view('layout/navbar');
  * Cada questão deve ter: id, enunciado, alternativas (array), condicional_1, condicional_2
  */
 ?>
+<style>
+  .questionnaire-branch-question { scroll-margin-top: 6rem; }
+  .questionnaire-answered {
+    border: 2px solid #198754;
+    border-radius: 24px;
+    background: #f0fdf4;
+    margin-bottom: 1.5rem;
+  }
+  .questionnaire-answered .card {
+    background: #f0fdf4;
+    margin-bottom: 0 !important;
+    box-shadow: none;
+  }
+
+  .questionnaire-pending {
+    border: 2px solid #dc3545;
+    border-radius: 24px;
+    background: #fff1f2;
+    margin-bottom: 1.5rem;
+  }
+  .questionnaire-pending .card {
+    background: #fff1f2;
+    margin-bottom: 0 !important;
+    box-shadow: none;
+  }
+
+  .questionnaire-skipped-description {
+    margin-bottom: 1rem;
+    padding: 0.65rem 0.85rem;
+    border-left: 3px solid #ea580c;
+    border-radius: 4px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.9rem;
+  }
+  .questionnaire-skipped-description .small {
+    color: #b45309;
+  }
+</style>
 <div class="container py-4">
   <h2 class="mb-4">Questionário de Certificação</h2>
 
@@ -74,6 +113,17 @@ echo view('layout/navbar');
     </aside>
 
     <section class="col-lg-9">
+      <?php $progress = $questionnaire_progress ?? ['completion' => 0, 'answered' => 0, 'total' => 0]; ?>
+      <div class="mb-4" id="questionnaire-progress" aria-live="polite">
+        <div class="d-flex flex-wrap justify-content-between gap-1 small mb-2">
+          <strong>Preenchimento do question&#225;rio: <span data-progress-completion><?= esc(number_format($progress['completion'], 1, ',', '.')) ?></span>%</strong>
+          <span class="text-muted">Faltam <span data-progress-remaining><?= esc(number_format(100 - $progress['completion'], 1, ',', '.')) ?></span>% para 100%</span>
+        </div>
+        <div class="progress" role="progressbar" aria-label="Preenchimento do question&#225;rio" aria-valuenow="<?= esc((string) $progress['completion']) ?>" aria-valuemin="0" aria-valuemax="100" style="height: 10px;">
+          <div class="progress-bar bg-success" style="width: <?= esc((string) $progress['completion']) ?>%"></div>
+        </div>
+        <div class="small text-muted mt-1"><span data-progress-answered><?= esc((string) $progress['answered']) ?></span> de <span data-progress-total><?= esc((string) $progress['total']) ?></span> quest&#245;es preenchidas</div>
+      </div>
       <?php foreach ($questions ?? [] as $question): ?>
         <?php
           $evidenceQuestionId = (int) ($question['id'] ?? 0);
@@ -117,6 +167,19 @@ echo view('layout/navbar');
               $level2SectionOpen = true;
               $currentLevel2 = $level2;
             }
+            $answerValue = trim((string) ($q['saved_answer'] ?? ''));
+            $decodedAnswer = json_decode($answerValue, true);
+            $isAnswered = $q['tipo_resposta'] !== 'INFO' && $answerValue !== ''
+                && !(is_array($decodedAnswer) && $decodedAnswer === []);
+            $isPending = !empty($highlight_pending) && $q['tipo_resposta'] !== 'INFO' && !$isAnswered;
+            $answerClass = $isAnswered ? ' questionnaire-answered' : ($isPending ? ' questionnaire-pending' : '');
+            echo '<div id="question-' . $qid . '" class="questionnaire-branch-question' . $answerClass . '" data-question-id="' . $qid . '" data-answered="' . ($isAnswered ? '1' : '0') . '">';
+            $skippedNumber = trim((string) ($q['nivel3'] ?? ''));
+            echo '<div class="questionnaire-skipped-description" hidden>';
+            echo '<p class="mb-1">' . ($skippedNumber !== '' ? '<strong>' . esc($skippedNumber) . ' - </strong>' : '') . nl2br(glossario_conteudo($q['descricao'] ?? '')) . '</p>';
+            echo '<p class="small mb-0">N&#227;o pertinente, por negativa da quest&#227;o anterior</p>';
+            echo '</div>';
+            echo '<fieldset class="questionnaire-branch-content">';
             switch ($q['tipo_resposta']) {
               case 'INFO':
                 echo view('application/types/questionnaire_info', ['q' => $q]);
@@ -128,6 +191,7 @@ echo view('layout/navbar');
                 echo view('application/types/questionnaire_default', ['q' => $q]);
                 break;
             }
+            echo '</fieldset></div>';
             ?>
           <?php endforeach; ?>
 
@@ -135,7 +199,8 @@ echo view('layout/navbar');
             </div></section>
           <?php endif; ?>
 
-          <div class="d-flex justify-content-end gap-2">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <button type="submit" name="save_for_later" value="1" class="btn btn-outline-primary" formnovalidate>Salvar e Continuar Depois</button>
             <button type="submit" class="btn btn-primary">Salvar e continuar</button>
           </div>
         <?php else: ?>
@@ -145,6 +210,62 @@ echo view('layout/navbar');
     </section>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form[data-answer-save-url]');
+    if (!form) return;
+    const progress = document.getElementById('questionnaire-progress');
+    form.addEventListener('questionnaire:progress-saved', event => {
+        const data = event.detail;
+        progress.querySelector('[data-progress-completion]').textContent = Number(data.completion).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        progress.querySelector('[data-progress-remaining]').textContent = (100 - Number(data.completion)).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        progress.querySelector('[data-progress-answered]').textContent = data.answered;
+        progress.querySelector('[data-progress-total]').textContent = data.total;
+        progress.querySelector('[role="progressbar"]').setAttribute('aria-valuenow', data.completion);
+        progress.querySelector('.progress-bar').style.width = data.completion + '%';
+    });
+    const questions = Array.from(form.querySelectorAll('.questionnaire-branch-question'));
+    const initialSkipped = <?= json_encode($skipped_question_ids ?? []) ?>;
+    function applySkipped(ids) {
+        const skipped = new Set(ids.map(String));
+        questions.forEach(wrapper => {
+            const isSkipped = skipped.has(wrapper.dataset.questionId);
+            const content = wrapper.querySelector('.questionnaire-branch-content');
+            const summary = wrapper.querySelector('.questionnaire-skipped-description');
+            content.disabled = isSkipped;
+            content.hidden = isSkipped;
+            summary.hidden = !isSkipped;
+            wrapper.dataset.skipped = isSkipped ? '1' : '0';
+            if (isSkipped) {
+                wrapper.classList.remove('questionnaire-pending');
+                wrapper.dataset.answered = '1';
+            }
+            wrapper.classList.toggle('questionnaire-answered', !isSkipped && wrapper.dataset.answered === '1');
+            let hiddenAnswer = wrapper.querySelector('.questionnaire-skipped-answer');
+            if (isSkipped) {
+                const noInput = content.querySelector('.questionnaire-sn-input[value="2"]');
+                if (noInput) {
+                    noInput.checked = true;
+                    noInput.closest('.questionnaire-sn-card').dataset.savedAnswer = '2';
+                }
+                if (!hiddenAnswer) {
+                    hiddenAnswer = document.createElement('input');
+                    hiddenAnswer.type = 'hidden';
+                    hiddenAnswer.className = 'questionnaire-skipped-answer';
+                    hiddenAnswer.name = 'questao_' + wrapper.dataset.questionId;
+                    hiddenAnswer.value = '2';
+                    wrapper.appendChild(hiddenAnswer);
+                }
+            } else if (hiddenAnswer) {
+                hiddenAnswer.remove();
+            }
+        });
+    }
+    applySkipped(initialSkipped);
+    form.addEventListener('questionnaire:branches-saved', event => applySkipped(event.detail));
+});
+</script>
 
 <?php
 echo view('layout/footer');

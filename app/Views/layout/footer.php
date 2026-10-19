@@ -130,6 +130,16 @@
               throw new Error(result.message || 'Falha ao salvar a resposta.');
             }
             cardEl.dataset.savedAnswer = inputEl.value;
+            var branchQuestion = cardEl.closest('.questionnaire-branch-question');
+            if (branchQuestion) {
+              branchQuestion.classList.remove('questionnaire-pending');
+              branchQuestion.classList.add('questionnaire-answered');
+              branchQuestion.dataset.answered = '1';
+            }
+            questionnaireForm.dispatchEvent(new CustomEvent('questionnaire:branches-saved', { detail: result.skipped_ids || [] }));
+            if (result.progress) {
+              questionnaireForm.dispatchEvent(new CustomEvent('questionnaire:progress-saved', { detail: result.progress }));
+            }
             statusEl.className = 'questionnaire-answer-status small fw-semibold mt-3 text-success';
             statusEl.textContent = 'Resposta salva.';
           })

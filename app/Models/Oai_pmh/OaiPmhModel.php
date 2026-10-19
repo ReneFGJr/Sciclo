@@ -11,6 +11,7 @@ class OaiPmhModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
                 'base_url',
+                'SSL',
                 'status',
                 'submitted_at',
                 'submitted_by',
@@ -184,6 +185,137 @@ class OaiPmhModel extends Model
             }
         }
         return [];
+    }
+
+    public function validateRepositorySsl(int $idRepo, ?\App\Libraries\RepositorySslValidator $validator = null): array
+    {
+        $repository = $this->find($idRepo);
+        if (!$repository) return ['status' => '500', 'message' => 'Repositorio nao encontrado.'];
+        $validator ??= new \App\Libraries\RepositorySslValidator();
+        $result = $validator->check((string) $repository['base_url']);
+        if (!$this->update($idRepo, ['SSL' => json_encode($result, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR)])) {
+            return ['status' => '500', 'message' => 'Falha ao salvar a validacao SSL.'];
+        }
+        return ['status' => $result['valid'] === true ? '200' : '500', 'message' => $result['message']];
+    }
+
+    public function collectMetadataFormats(int $idRepo): array
+    {
+        $repository = $this->find($idRepo);
+        if (!$repository || empty($repository['base_url_oai'])) {
+            return ['status' => '500', 'message' => 'Endpoint OAI-PMH nao identificado para consultar os formatos de metadados.'];
+        }
+        try {
+            $url = \App\Libraries\OaiMetadataFormats::requestUrl($repository['base_url_oai']);
+            $body = $this->fetchSoftwareMetadata($url);
+            if ($body === null) throw new \RuntimeException('Falha ao consultar ListMetadataFormats.');
+            $formats = \App\Libraries\OaiMetadataFormats::parse($body);
+        } catch (\RuntimeException $error) {
+            return ['status' => '500', 'message' => $error->getMessage()];
+        }
+        $metadataModel = new OaiPmhMetadataModel();
+        $this->db->transStart();
+        foreach ($formats as $format) {
+            $existing = $metadataModel->where('oai_pmh_id', $idRepo)->where('metadata_prefix', $format['metadata_prefix'])->first();
+            $format['oai_pmh_id'] = $idRepo;
+            $saved = $existing ? $metadataModel->update((int) $existing['id'], $format) : $metadataModel->insert($format) !== false;
+            if (!$saved) {
+                $this->db->transRollback();
+                return ['status' => '500', 'message' => 'Falha ao salvar os formatos de metadados.'];
+            }
+        }
+        $this->db->transComplete();
+        if (!$this->db->transStatus()) return ['status' => '500', 'message' => 'Falha ao salvar os formatos de metadados.'];
+        return ['status' => '200', 'message' => count($formats) . ' formatos de metadados identificados e salvos: ' . implode(', ', array_column($formats, 'metadata_prefix')) . '.'];
+    }
+
+    public function detectRepositorySoftware(int $idRepo): array
+    {
+        $repository = $this->find($idRepo);
+        if (!$repository) return ['status' => '500', 'message' => 'Repositorio nao encontrado.'];
+        $detector = \App\Libraries\RepositorySoftwareDetector::class;
+        $detected = [];
+        if (!empty($repository['raw_identify_xml'])) {
+            $previous = libxml_use_internal_errors(true);
+            try {
+                $xml = simplexml_load_string($repository['raw_identify_xml'], SimpleXMLElement::class, LIBXML_NONET);
+                if ($xml !== false) $detected = self::identifySoftware($xml);
+            } finally {
+                libxml_clear_errors();
+                libxml_use_internal_errors($previous);
+            }
+        }
+        $html = $this->fetchSoftwareMetadata((string) $repository['base_url']);
+        $pageSoftware = $html !== null ? $detector::html($html) : [];
+        if (!$detected || (($pageSoftware['name'] ?? '') === $detected['name'] && empty($detected['version']))) {
+            $detected = $pageSoftware ?: $detected;
+        }
+        $bases = [];
+        foreach (['base_url', 'base_url_oai'] as $field) {
+            $parts = parse_url((string) ($repository[$field] ?? ''));
+            if (!$parts || empty($parts['host']) || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) continue;
+            $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+            $path = rtrim($parts['path'] ?? '', '/');
+            $path = preg_replace('~/(?:server/)?oai(?:-pmh)?(?:/request)?$|/(?:home|xmlui|jspui)$~i', '', $path);
+            $bases[] = $origin . $path;
+            $bases[] = $origin;
+        }
+        $endpoints = ['DSpace' => ['/server/api', '/api'], 'Dataverse' => ['/api/info/version'], 'CKAN' => ['/api/3/action/status_show']];
+        $deadline = microtime(true) + 20;
+        foreach (array_unique($bases) as $base) {
+            foreach ($endpoints as $name => $paths) {
+                if ($detected && $detected['name'] !== $name) continue;
+                foreach ($paths as $path) {
+                    if (microtime(true) >= $deadline) break 3;
+                    $body = $this->fetchSoftwareMetadata($base . $path);
+                    $result = $body !== null ? $detector::api($name, $body) : [];
+                    if ($result) {
+                        $detected = $result;
+                        break 3;
+                    }
+                }
+            }
+        }
+        if (!$detected) {
+            return ['status' => '200', 'message' => 'Software e versao nao divulgados pelo repositorio. Os dados existentes foram mantidos.'];
+        }
+        $software = $this->db->table('repository_software')->where('name', $detected['name'])->get()->getRowArray();
+        if (!$software) return ['status' => '500', 'message' => 'Software identificado, mas ausente do cadastro: ' . $detected['name']];
+        $fields = ['repository_software' => (int) $software['id']];
+        $version = $detector::version($detected['version'] ?? null);
+        if ($version !== null && strlen($version) <= 10) {
+            $fields['repository_software_version'] = $version;
+        } elseif ((int) ($repository['repository_software'] ?? 0) !== (int) $software['id']) {
+            $fields['repository_software_version'] = null;
+        }
+        if (!$this->update($idRepo, $fields)) return ['status' => '500', 'message' => 'Falha ao salvar o software do repositorio.'];
+        return ['status' => '200', 'message' => 'Software: ' . $detected['name'] . '. Versao: ' . ($version ?? 'nao divulgada') . '.'];
+    }
+
+    protected function fetchSoftwareMetadata(string $url): ?string
+    {
+        if (!in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)) return null;
+        $curl = curl_init($url);
+        $body = '';
+        curl_setopt_array($curl, [
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_USERAGENT => 'Sciclo Repository Identification',
+            CURLOPT_HTTPHEADER => ['Accept: application/json, text/html;q=0.9'],
+            CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use (&$body): int {
+                if (strlen($body) + strlen($chunk) > 2097152) return 0;
+                $body .= $chunk;
+                return strlen($chunk);
+            },
+        ]);
+        $success = curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        return $success !== false && $status >= 200 && $status < 300 ? $body : null;
     }
 
     private function saveIdentification(int $idRepo, string $url, array $result): void

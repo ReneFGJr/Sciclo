@@ -13,7 +13,7 @@ class Questions extends Controller
         $questions = $model->findAll();
 
         usort($questions, static function (array $a, array $b): int {
-            foreach (['criterio', 'nivel1', 'nivel2', 'nivel3'] as $field) {
+            foreach (['nivel1', 'nivel2', 'nivel3', 'criterio'] as $field) {
                 $cmp = strnatcmp((string) ($a[$field] ?? ''), (string) ($b[$field] ?? ''));
                 if ($cmp !== 0) {
                     return $cmp;
@@ -23,6 +23,47 @@ class Questions extends Controller
             return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
         });
 
+        $levelOptions = [];
+        foreach ($questions as $question) {
+            $level1 = trim((string) ($question['nivel1'] ?? ''));
+            $level2 = trim((string) ($question['nivel2'] ?? ''));
+            if ($level1 === '') continue;
+            $axisKey = 'axis:' . rawurlencode($level1);
+            $levelOptions[$axisKey] = ['label' => 'Eixo ' . $level1 . ' - Todos os grupos', 'nivel1' => $level1, 'nivel2' => null];
+            if ($level2 !== '') {
+                $groupKey = 'group:' . rawurlencode($level1) . ':' . rawurlencode($level2);
+                $levelOptions[$groupKey] = ['label' => 'Nível ' . $level1 . '.' . $level2, 'nivel1' => $level1, 'nivel2' => $level2];
+            }
+        }
+        $requestedLevel = service('request')->getGet('nivel');
+        $selectedLevel = is_string($requestedLevel) && isset($levelOptions[$requestedLevel]) ? $requestedLevel : '';
+        if ($selectedLevel !== '') {
+            $filter = $levelOptions[$selectedLevel];
+            $questions = array_values(array_filter($questions, static function (array $question) use ($filter): bool {
+                return trim((string) ($question['nivel1'] ?? '')) === $filter['nivel1']
+                    && ($filter['nivel2'] === null || trim((string) ($question['nivel2'] ?? '')) === $filter['nivel2']);
+            }));
+        }
+        $requestedSearch = service('request')->getGet('busca');
+        $search = is_string($requestedSearch) ? trim($requestedSearch) : '';
+        if ($search !== '') {
+            $normalize = static function (string $text): string {
+                $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                return mb_strtolower(transliterator_transliterate('Any-Latin; Latin-ASCII', $text) ?: $text, 'UTF-8');
+            };
+            $term = $normalize($search);
+            $questions = array_values(array_filter($questions, static function (array $question) use ($normalize, $term): bool {
+                $values = [];
+                foreach (['id', 'criterio', 'questao', 'descricao', 'tipo_resposta'] as $field) {
+                    $values[] = (string) ($question[$field] ?? '');
+                }
+                $values[] = implode('.', [$question['nivel1'] ?? '', $question['nivel2'] ?? '', $question['nivel3'] ?? '']);
+                return str_contains($normalize(implode(' ', $values)), $term);
+            }));
+        }
+        $data['search'] = $search;
+        $data['levelOptions'] = $levelOptions;
+        $data['selectedLevel'] = $selectedLevel;
         $data['questions'] = $questions;
         return view('admin/questions', $data);
     }
