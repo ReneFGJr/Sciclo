@@ -35,7 +35,7 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                 $evidenceUrl = (string) ($evidence['url'] ?? '');
                 $evidenceDescription = (string) ($evidence['descricao'] ?? '');
                 ?>
-                <div class="list-group-item d-flex justify-content-between align-items-start gap-3">
+                <div id="evidence-<?= $evidenceId ?>" class="list-group-item d-flex justify-content-between align-items-start gap-3" style="scroll-margin-top: 6rem;">
                     <div class="me-3">
                         <a href="<?= esc($evidenceUrl) ?>" target="_blank" rel="noopener noreferrer" class="fw-semibold text-decoration-none">
                             <?= esc($evidenceTitle) ?>

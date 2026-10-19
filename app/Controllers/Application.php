@@ -595,6 +595,15 @@ class Application extends Controller
         return view('application/submission_review', ['repo' => $repo, 'progress' => $progress]);
     }
 
+    private function evidenceReturnUrl(int $questionId, string $fallbackAxis, ?int $evidenceId = null): string
+    {
+        $question = (new \App\Models\Question\CertificacaoQuestoesModel())->find($questionId);
+        $axis = (int) ($question['nivel1'] ?? $fallbackAxis);
+        $level2 = (int) ($question['nivel2'] ?? 0);
+        $path = 'application/form/' . max(1, $axis) . ($level2 > 0 ? '/' . $level2 : '');
+        return site_url($path) . ($evidenceId !== null ? '#evidence-' . $evidenceId : '#question-' . $questionId);
+    }
+
     public function saveEvidence()
     {
         $repoId = (int) (session()->get('repo_id') ?? 0);
@@ -630,7 +639,7 @@ class Application extends Controller
         if ($questionId <= 0 || $url === '') {
             session()->setFlashdata('evidence_error', 'Informe uma URL válida para a evidência.');
             session()->setFlashdata('evidence_modal_question', $questionId);
-            return redirect()->to(base_url('application/form/' . $currentAxis));
+            return redirect()->to($this->evidenceReturnUrl($questionId, $currentAxis));
         }
 
         $urlHash = hash('sha256', strtolower($url));
@@ -675,12 +684,13 @@ class Application extends Controller
         if (! $saved) {
             session()->setFlashdata('evidence_error', 'Não foi possível salvar a evidência. Tente novamente.');
             session()->setFlashdata('evidence_modal_question', $questionId);
-            return redirect()->to(base_url('application/form/' . $currentAxis));
+            return redirect()->to($this->evidenceReturnUrl($questionId, $currentAxis));
         }
 
+        $savedEvidenceId = (int) ($existing['id'] ?? $evidenceModel->getInsertID());
         session()->setFlashdata('evidence_success', 'Evidência salva com sucesso: ' . $titulo);
         session()->setFlashdata('evidence_modal_question', $questionId);
-        return redirect()->to(base_url('application/form/' . $currentAxis));
+        return redirect()->to($this->evidenceReturnUrl($questionId, $currentAxis, $savedEvidenceId));
     }
 
     public function deleteEvidence($id = null)
@@ -703,7 +713,7 @@ class Application extends Controller
 
         session()->setFlashdata('evidence_success', 'Evidência excluída com sucesso.');
         session()->setFlashdata('evidence_modal_question', (int) ($existing['questao_id'] ?? 0));
-        return redirect()->to(base_url('application/form/' . $currentAxis));
+        return redirect()->to($this->evidenceReturnUrl((int) $existing['questao_id'], $currentAxis));
     }
 
     public function editEvidence($id = null)
