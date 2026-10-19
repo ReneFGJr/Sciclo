@@ -154,6 +154,15 @@ class Application extends Controller
             $evidencesByQuestion[$questionId][] = $evidence;
         }
 
+        $reusableEvidencesByUrl = [];
+        foreach ($existingEvidences as $evidence) {
+            $url = trim((string) ($evidence['url'] ?? ''));
+            if ($url !== '' && !isset($reusableEvidencesByUrl[$url])) {
+                $reusableEvidencesByUrl[$url] = $evidence;
+            }
+        }
+        $existingEvidences = array_values($reusableEvidencesByUrl);
+
         $nextAxis = null;
         $currentAxis = (string) $c1;
         $totalAxes = count($axes);
