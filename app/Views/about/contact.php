@@ -9,7 +9,7 @@ echo view('layout/navbar');
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <h1 class="fw-bold mb-4">Fale Conosco</h1>
-            <p class="mb-4">Entre em contato pelo e-mail <a href="mailto:contato@sciclo.org">contato@sciclo.org</a> ou utilize o formulário abaixo:</p>
+            <p class="mb-4">Entre em contato pelo e-mail <a href="mailto:sciclo@ibict.br">sciclo@ibict.br</a> ou utilize o formulário abaixo:</p>
             <form method="post" action="#" class="card p-4 shadow-sm border-0">
                 <div class="mb-3">
                     <label for="nome" class="form-label">Nome</label>
