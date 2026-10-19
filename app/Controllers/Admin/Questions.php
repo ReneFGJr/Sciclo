@@ -37,6 +37,9 @@ class Questions extends Controller
         }
         $method = strtolower($request->getMethod());
         if ($method === 'post') {
+            if (!$this->validConditionalTargets($model, isset($id) ? (int) $id : null)) {
+                return redirect()->back()->withInput()->with('question_error', 'Selecione uma questão de destino válida, do mesmo critério e diferente da questão atual.');
+            }
             $data = [
                 'criterio' => $request->getPost('criterio'),
                 'nivel1' => $request->getPost('nivel1'),
@@ -48,12 +51,13 @@ class Questions extends Controller
                 'feedback' => $request->getPost('feedback'),
                 'icone' => $request->getPost('icone'),
                 'imagem' => $request->getPost('imagem'),
-                'condicional' => $request->getPost('condicional'),
+                'condicional_1' => (int) $request->getPost('condicional_1'),
+                'condicional_2' => (int) $request->getPost('condicional_2'),
             ];
             $model->update($id, $data);
             return redirect()->to(base_url('admin/questions'));
         }
-        return view('admin/add_question', ['question' => $question]);
+        return view('admin/add_question', ['question' => $question, 'targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
     }
 
     public function delete($id)
@@ -69,6 +73,9 @@ class Questions extends Controller
         $request = service('request');
         $method = strtolower($request->getMethod());
         if ($method === 'post') {
+            if (!$this->validConditionalTargets($model, isset($id) ? (int) $id : null)) {
+                return redirect()->back()->withInput()->with('question_error', 'Selecione uma questão de destino válida, do mesmo critério e diferente da questão atual.');
+            }
             $data = [
                 'criterio' => $request->getPost('criterio'),
                 'nivel1' => $request->getPost('nivel1'),
@@ -80,11 +87,31 @@ class Questions extends Controller
                 'feedback' => $request->getPost('feedback'),
                 'icone' => $request->getPost('icone'),
                 'imagem' => $request->getPost('imagem'),
-                'condicional' => $request->getPost('condicional'),
+                'condicional_1' => (int) $request->getPost('condicional_1'),
+                'condicional_2' => (int) $request->getPost('condicional_2'),
             ];
             $model->insert($data);
             return redirect()->to(base_url('admin/questions'));
         }
-        return view('admin/add_question');
+        return view('admin/add_question', ['targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
+    }
+    private function validConditionalTargets(CertificacaoQuestoesModel $model, ?int $currentId): bool
+    {
+        foreach (['condicional_1', 'condicional_2'] as $field) {
+            $value = service('request')->getPost($field);
+            if ($value === null || $value === '' || $value === '0') {
+                continue;
+            }
+            $targetId = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($targetId === false || $targetId === $currentId) {
+                return false;
+            }
+            $target = $model->find($targetId);
+            if (!$target || (string) $target['criterio'] !== (string) service('request')->getPost('criterio')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -6,11 +6,14 @@
 
 <div class="container py-5">
     <h1 class="mb-4 fw-bold">Questão de Certificação</h1>
+    <?php if (session()->getFlashdata('question_error')): ?>
+        <div class="alert alert-danger"><?= esc(session()->getFlashdata('question_error')) ?></div>
+    <?php endif; ?>
     <form method="post" action="">
         <div class="row g-3">
             <div class="col-md-3">
                 <label for="criterio" class="form-label">Critério</label>
-                <input type="text" class="form-control" id="criterio" name="criterio" maxlength="15" required value="<?= isset($question) ? esc($question['criterio']) : '' ?>">
+                <input type="text" class="form-control" id="criterio" name="criterio" maxlength="15" required value="<?= esc(old('criterio', $question['criterio'] ?? '')) ?>">
             </div>
             <div class="col-md-3">
                 <label for="nivel1" class="form-label">Eixo de Certificação</label>
@@ -67,18 +70,54 @@
             <textarea class="form-control" id="feedback" name="feedback" rows="5"><?= isset($question) ? esc($question['feedback'] ?? '') : '' ?></textarea>
         </div>
         <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="condicional_1" class="form-label">Condicional 1</label>
-                <input type="number" class="form-control" id="condicional_1" name="condicional_1" value="<?= isset($question) ? esc($question['condicional_1']) : '0' ?>">
-            </div>
-            <div class="col-md-6">
-                <label for="condicional_2" class="form-label">Condicional 2</label>
-                <input type="number" class="form-control" id="condicional_2" name="condicional_2" value="<?= isset($question) ? esc($question['condicional_2']) : '0' ?>">
-            </div>
+            <?php foreach (['condicional_1' => 'Condicional 1 (SIM)', 'condicional_2' => 'Condicional 2 (NÃO)'] as $field => $label): ?>
+                <?php $selectedTarget = (int) old($field, $question[$field] ?? 0); ?>
+                <div class="col-md-6">
+                    <label for="<?= esc($field) ?>" class="form-label"><?= esc($label) ?></label>
+                    <select class="form-select" id="<?= esc($field) ?>" name="<?= esc($field) ?>" aria-describedby="<?= esc($field) ?>_help">
+                        <option value="0" <?= $selectedTarget === 0 ? 'selected' : '' ?>>Seguir para a próxima questão</option>
+                        <?php foreach ($targetQuestions ?? [] as $target): ?>
+                            <?php if ((int) $target['id'] === (int) ($question['id'] ?? 0)) continue; ?>
+                            <?php
+                            $targetNumber = implode('.', [
+                                (string) ($target['nivel1'] ?? ''),
+                                (string) ($target['nivel2'] ?? ''),
+                                (string) ($target['nivel3'] ?? ''),
+                            ]);
+                            $targetDescription = trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($target['descricao'] ?? ''))) ?? '');
+                            $targetExcerpt = mb_strimwidth($targetDescription, 0, 120, '...', 'UTF-8');
+                            ?>
+                            <option data-criterio="<?= esc((string) $target['criterio'], 'attr') ?>" value="<?= esc((string) $target['id']) ?>" <?= $selectedTarget === (int) $target['id'] ? 'selected' : '' ?>><?= esc($targetNumber . ' - ' . $targetExcerpt) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div id="<?= esc($field) ?>_help" class="form-text">Indique a próxima questão para preenchimento quando a resposta for <?= $field === 'condicional_1' ? 'SIM' : 'NÃO' ?>. Sem seleção, segue para a próxima questão na sequência.</div>
+                </div>
+            <?php endforeach; ?>
         </div>
         <button type="submit" class="btn btn-success btn-lg">Salvar</button>
         <a href="<?= base_url('admin/questions') ?>" class="btn btn-secondary btn-lg ms-2">Cancelar</a>
     </form>
 </div>
+
+<script>
+(() => {
+    const criterion = document.getElementById('criterio');
+    const destinations = ['condicional_1', 'condicional_2'].map(id => {
+        const select = document.getElementById(id);
+        return { select, options: Array.from(select.options).slice(1) };
+    });
+    function filterDestinations() {
+        destinations.forEach(({ select, options }) => {
+            const selected = select.value;
+            options.forEach(option => option.remove());
+            options.filter(option => option.dataset.criterio === criterion.value)
+                .forEach(option => select.add(option));
+            select.value = Array.from(select.options).some(option => option.value === selected) ? selected : '0';
+        });
+    }
+    criterion.addEventListener('input', filterDestinations);
+    filterDestinations();
+})();
+</script>
 
 <?= view('layout/footer') ?>
