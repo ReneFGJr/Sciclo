@@ -1,6 +1,7 @@
 <?= view('layout/header') ?>
 <?= view('layout/navbar') ?>
 <?php
+$evaluatorsActive = service('request')->getGet('tab') === 'evaluators';
 $type = $repository['repository_type'] ?? '';
 $types = ['publicacao' => 'Publicação', 'dados' => 'Dados', 'ambos' => 'Publicação e Dados', 'arquivistico' => 'Arquivístico'];
 $evaluated = !empty($repository['seal_data_avaliation']) && $repository['seal_data_avaliation'] !== '0000-00-00 00:00:00';
@@ -23,10 +24,13 @@ $fields = [
     <h1 class="fw-bold mb-3"><?= esc($repository['repository_name'] ?: 'Repositório #' . $repository['id']) ?></h1>
     <ul class="nav nav-tabs mb-4" role="tablist" aria-label="Detalhes do repositório">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="repository-data-tab" data-bs-toggle="tab" data-bs-target="#repository-data" type="button" role="tab" aria-controls="repository-data" aria-selected="true">Dados do repositório</button>
+            <button class="nav-link <?= $evaluatorsActive ? '' : 'active' ?>" id="repository-data-tab" data-bs-toggle="tab" data-bs-target="#repository-data" type="button" role="tab" aria-controls="repository-data" aria-selected="<?= $evaluatorsActive ? 'false' : 'true' ?>">Dados do repositório</button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="repository-summary-tab" data-bs-toggle="tab" data-bs-target="#repository-summary" type="button" role="tab" aria-controls="repository-summary" aria-selected="false">Resumo</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link <?= $evaluatorsActive ? 'active' : '' ?>" id="repository-evaluators-tab" data-bs-toggle="tab" data-bs-target="#repository-evaluators" type="button" role="tab" aria-controls="repository-evaluators" aria-selected="<?= $evaluatorsActive ? 'true' : 'false' ?>">Avaliadores</button>
         </li>
         <?php $tabIndex = 0; foreach ($criteriaGroups as $level => $questions): $tabIndex++; ?>
         <li class="nav-item" role="presentation">
@@ -35,10 +39,13 @@ $fields = [
         <?php endforeach; ?>
     </ul>
     <div class="tab-content">
+        <div class="tab-pane fade <?= $evaluatorsActive ? 'show active' : '' ?>" id="repository-evaluators" role="tabpanel" aria-labelledby="repository-evaluators-tab" tabindex="0">
+            <?= view('repositories/evaluators', ['repository' => $repository, 'evaluations' => $evaluations, 'availableEvaluators' => $availableEvaluators, 'currentRound' => $currentRound]) ?>
+        </div>
     <div class="tab-pane fade" id="repository-summary" role="tabpanel" aria-labelledby="repository-summary-tab" tabindex="0">
-        <?= view('repositories/summary', ['summary' => $summary, 'fillingTime' => $fillingTime]) ?>
+        <?= view('repositories/summary', ['summary' => $summary, 'evaluationCounts' => $evaluationCounts, 'fillingTime' => $fillingTime, 'repositoryId' => (int) $repository['id']]) ?>
     </div>
-    <div class="tab-pane fade show active" id="repository-data" role="tabpanel" aria-labelledby="repository-data-tab" tabindex="0">
+    <div class="tab-pane fade <?= $evaluatorsActive ? '' : 'show active' ?>" id="repository-data" role="tabpanel" aria-labelledby="repository-data-tab" tabindex="0">
     <div class="card shadow-sm">
         <div class="card-body">
             <h2 class="h4 mb-4">Dados do repositório</h2>

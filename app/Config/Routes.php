@@ -71,3 +71,7 @@ $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($rout
 });
 $routes->get('repositories', 'Repositories::index', ['filter' => 'administrator']);
 $routes->get('repositories/(:num)', 'Repositories::show/$1', ['filter' => 'administrator']);
+
+$routes->get('repositories/(:num)/response-timeline', 'Repositories::responseTimeline/$1', ['filter' => 'administrator']);
+
+$routes->post('repositories/(:num)/evaluators', 'Repositories::assignEvaluator/$1', ['filter' => ['administrator', 'csrf']]);

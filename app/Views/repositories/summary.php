@@ -12,8 +12,8 @@ $percent = static fn ($value) => number_format($value, 1, ',', '.') . '%';
 <?php if (!$summary['total']): ?>
     <div class="alert alert-info">Nenhuma questão disponível para compor o resumo.</div>
 <?php else: ?>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-4">
-        <?php foreach (['total' => 'Questões', 'answered' => 'Respondidas', 'pending' => 'Pendentes', 'evidences' => 'Evidências vinculadas'] as $key => $label): ?>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <?php foreach (['total' => 'Questões', 'evidences' => 'Evidências vinculadas'] as $key => $label): ?>
             <div class="col">
                 <div class="card shadow-sm h-100"><div class="card-body">
                     <div class="text-muted"><?= esc($label) ?></div>
@@ -23,7 +23,20 @@ $percent = static fn ($value) => number_format($value, 1, ',', '.') . '%';
         <?php endforeach; ?>
         <div class="col">
             <div class="card shadow-sm h-100"><div class="card-body">
-                <div class="text-muted">Tempo de preenchimento</div>
+                <div class="text-muted">Avaliadores</div>
+                <div class="fs-2 fw-bold" aria-label="Indicados, visualizadas e conclu&#237;das"><?= (int) ($evaluationCounts['assigned'] ?? 0) ?>/<?= (int) ($evaluationCounts['viewed'] ?? 0) ?>/<?= (int) ($evaluationCounts['completed'] ?? 0) ?></div>
+                <div class="small text-muted">Indicados / visualizadas / conclu&#237;das</div>
+            </div></div>
+        </div>
+        <div class="col">
+            <div class="card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted">
+                    <?php if (isset($repositoryId)): ?>
+                        <a href="<?= site_url('repositories/' . (int) $repositoryId . '/response-timeline') ?>">Tempo de preenchimento</a>
+                    <?php else: ?>
+                        Tempo de preenchimento
+                    <?php endif; ?>
+                </div>
                 <div class="fs-4 fw-bold"><?= esc($fillingTime['label'] ?? 'Indisponível') ?></div>
                 <div class="small text-muted mt-1">Da primeira resposta ao envio.</div>
             </div></div>
