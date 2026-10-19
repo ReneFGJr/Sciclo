@@ -115,6 +115,16 @@ class Users extends BaseController
             'starts_at' => $this->request->getPost('starts_at'),
             'ends_at' => $this->request->getPost('ends_at'),
         ];
+        foreach (['starts_at', 'ends_at'] as $field) {
+            $value = $data[$field];
+            if (is_string($value) && preg_match('~^[0-9]{2}/[0-9]{2}/[0-9]{4}$~', $value)) {
+                $date = \DateTimeImmutable::createFromFormat('!d/m/Y', $value);
+                $errors = \DateTimeImmutable::getLastErrors();
+                if ($date !== false && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
+                    $data[$field] = $date->format('Y-m-d');
+                }
+            }
+        }
         $target = base_url('admin/users/edit/' . $id);
         $validation = service('validation');
         $validation->setRules([

@@ -22,8 +22,8 @@
 <?= csrf_field() ?>
 <input type="hidden" name="assignment_id" value="<?= $assignment['id'] ?>">
 <input type="hidden" name="rule_id" value="<?= $assignment['rule_id'] ?>">
-<div class="col-md-4"><label class="form-label" for="start-<?= $assignment['id'] ?>">Início</label><input class="form-control" type="date" id="start-<?= $assignment['id'] ?>" name="starts_at" value="<?= esc($assignment['starts_at'], 'attr') ?>" required></div>
-<div class="col-md-4"><label class="form-label" for="end-<?= $assignment['id'] ?>">Fim</label><input class="form-control" type="date" id="end-<?= $assignment['id'] ?>" name="ends_at" value="<?= esc($assignment['ends_at'], 'attr') ?>" required></div>
+<div class="col-md-4"><label class="form-label" for="start-<?= $assignment['id'] ?>">Início</label><input class="form-control" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" id="start-<?= $assignment['id'] ?>" name="starts_at" value="<?= esc(date('d/m/Y', strtotime($assignment['starts_at'])), 'attr') ?>" required></div>
+<div class="col-md-4"><label class="form-label" for="end-<?= $assignment['id'] ?>">Fim</label><input class="form-control" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" id="end-<?= $assignment['id'] ?>" name="ends_at" value="<?= esc(date('d/m/Y', strtotime($assignment['ends_at'])), 'attr') ?>" required></div>
 <div class="col-md-4 align-self-end"><button class="btn btn-primary">Atualizar período</button></div>
 </form>
 <form method="post" class="mt-2" action="<?= base_url('admin/users/' . $user['id'] . '/rules/' . $assignment['id'] . '/delete') ?>" onsubmit="return confirm('Remover esta atribuição de perfil?')">
@@ -38,8 +38,8 @@
 <option value="">Selecione</option>
 <?php foreach ($rules as $rule): ?><option value="<?= $rule['id'] ?>"><?= esc($rule['name']) ?></option><?php endforeach; ?>
 </select></div>
-<div class="col-md-3"><label for="starts_at" class="form-label">Início</label><input class="form-control" id="starts_at" name="starts_at" type="date" required></div>
-<div class="col-md-3"><label for="ends_at" class="form-label">Fim</label><input class="form-control" id="ends_at" name="ends_at" type="date" required></div>
+<div class="col-md-3"><label for="starts_at" class="form-label">Início</label><input class="form-control" id="starts_at" name="starts_at" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required></div>
+<div class="col-md-3"><label for="ends_at" class="form-label">Fim</label><input class="form-control" id="ends_at" name="ends_at" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required></div>
 <div class="col-md-2 align-self-end"><button class="btn btn-success">Atribuir</button></div>
 </form>
 <?php endif; ?>
