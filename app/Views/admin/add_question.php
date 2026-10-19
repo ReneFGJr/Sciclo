@@ -10,6 +10,9 @@
         <div class="alert alert-danger"><?= esc(session()->getFlashdata('question_error')) ?></div>
     <?php endif; ?>
     <form method="post" action="">
+        <?php foreach ($returnFilters ?? [] as $filterKey => $filterValue): ?>
+            <input type="hidden" name="return_<?= esc($filterKey, 'attr') ?>" value="<?= esc($filterValue, 'attr') ?>">
+        <?php endforeach; ?>
         <div class="row g-3">
             <div class="col-md-3">
                 <label for="criterio" class="form-label">Critério</label>
@@ -44,6 +47,7 @@
                 <select class="form-select" id="tipo_resposta" name="tipo_resposta" required>
                     <option value="" disabled <?= !isset($question) ? 'selected' : '' ?>>Selecione...</option>
                     <option value="SN" <?= (isset($question) && $question['tipo_resposta'] == 'SN') ? 'selected' : '' ?>>Sim ou Não</option>
+                    <option value="SOFTWARE" <?= (isset($question) && $question['tipo_resposta'] == 'SOFTWARE') ? 'selected' : '' ?>>Validador pelo software</option>
                     <option value="TEXT" <?= (isset($question) && $question['tipo_resposta'] == 'TEXT') ? 'selected' : '' ?>>Texto longo</option>
                     <option value="SHORTEXT" <?= (isset($question) && $question['tipo_resposta'] == 'SHORTEXT') ? 'selected' : '' ?>>Texto curto</option>
                     <option value="URL" <?= (isset($question) && $question['tipo_resposta'] == 'URL') ? 'selected' : '' ?>>URL</option>
@@ -95,7 +99,7 @@
             <?php endforeach; ?>
         </div>
         <button type="submit" class="btn btn-success btn-lg">Salvar</button>
-        <a href="<?= base_url('admin/questions') ?>" class="btn btn-secondary btn-lg ms-2">Cancelar</a>
+        <a href="<?= esc($returnUrl ?? site_url('admin/questions'), 'attr') ?>" class="btn btn-secondary btn-lg ms-2">Cancelar</a>
     </form>
 </div>
 

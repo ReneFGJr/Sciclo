@@ -143,6 +143,7 @@ echo view('layout/navbar');
           <?php foreach ($questions as $q): ?>
             <?php
             $qid = (int) ($q['id'] ?? 0);
+            $q['software_validated'] = in_array($qid, $software_validated_ids ?? [], true);
             $q['saved_answer'] = $saved_answers[$qid] ?? null;
             $q['saved_comment'] = $saved_comments[$qid] ?? null;
             $q['evidencias'] = $evidences_by_question[$qid] ?? [];
@@ -184,6 +185,7 @@ echo view('layout/navbar');
               case 'INFO':
                 echo view('application/types/questionnaire_info', ['q' => $q]);
                 break;
+              case 'SOFTWARE':
               case 'SN':
                 echo view('application/types/questionnaire_sn', ['q' => $q]);
                 break;
@@ -201,7 +203,7 @@ echo view('layout/navbar');
 
           <div class="d-flex flex-wrap justify-content-between gap-2">
             <button type="submit" name="save_for_later" value="1" class="btn btn-outline-primary" formnovalidate>Salvar e Continuar Depois</button>
-            <button type="submit" class="btn btn-primary">Salvar e continuar</button>
+            <button type="submit" class="btn btn-primary"><?= !empty($is_last_question_group) ? 'Salvar e revisar submiss&#227;o' : 'Salvar e continuar' ?></button>
           </div>
         <?php else: ?>
           <div class="alert alert-warning">Nenhuma questão disponível para este eixo.</div>

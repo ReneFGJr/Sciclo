@@ -24,9 +24,9 @@ class RepositorySummary
                 if ($hasAnswer) {
                     $group['answered']++;
                     $normalized = mb_strtolower($value, 'UTF-8');
-                    if (($question['tipo_resposta'] ?? '') === 'SN' && in_array($normalized, ['1', 'sim'], true)) {
+                    if (in_array($question['tipo_resposta'] ?? '', ['SN', 'SOFTWARE'], true) && in_array($normalized, ['1', 'sim'], true)) {
                         $group['yes']++;
-                    } elseif (($question['tipo_resposta'] ?? '') === 'SN' && in_array($normalized, ['2', 'não', 'nao'], true)) {
+                    } elseif (in_array($question['tipo_resposta'] ?? '', ['SN', 'SOFTWARE'], true) && in_array($normalized, ['2', 'não', 'nao'], true)) {
                         $group['no']++;
                     } else {
                         $group['other']++;

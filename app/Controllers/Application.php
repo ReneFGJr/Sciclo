@@ -119,6 +119,7 @@ class Application extends Controller
         $savedAnswers = [];
         $savedComments = [];
         $repoId = (int) (session()->get('repo_id') ?? 0);
+        $softwareValidatedIds = $repoId > 0 ? $answerModel->saveSoftwareValidatedAnswers($repoId) : [];
         if ($repoId > 0) {
             $answers = $answerModel->where('oai_pmh_id', $repoId)->findAll();
             foreach ($answers as $answer) {
@@ -165,14 +166,20 @@ class Application extends Controller
             }
         }
 
+        $lastSublevel = $currentSublevels !== [] ? $currentSublevels[count($currentSublevels) - 1] : null;
+        $isLastQuestionGroup = $nextAxis === null
+            && ($lastSublevel === null || (string) $lastSublevel['nivel2'] === (string) $c2);
+
         return view('application/application_questionnaire', [
             'questions' => $questions,
             'axes' => $axes,
             'current_axis' => $currentAxis,
             'current_level2' => (string) $c2,
             'next_axis' => $nextAxis,
+            'is_last_question_group' => $isLastQuestionGroup,
             'highlight_pending' => $repoId > 0 && (int) session()->get('questionnaire_pending_repo') === $repoId,
             'questionnaire_progress' => $this->questionnaireProgress($repoId),
+            'software_validated_ids' => $softwareValidatedIds,
             'saved_answers' => $savedAnswers,
             'skipped_question_ids' => $skippedIds,
             'saved_comments' => $savedComments,
@@ -245,6 +252,7 @@ class Application extends Controller
 
     private function saveSkippedAnswers(int $repoId): array
     {
+        (new \App\Models\Question\CertificacaoQuestoesAnswerModel())->saveSoftwareValidatedAnswers($repoId);
         $questionModel = new \App\Models\Question\CertificacaoQuestoesModel();
         $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
         $answers = [];
@@ -292,7 +300,11 @@ class Application extends Controller
                 ->setJSON(['saved' => false, 'message' => 'Resposta inv?lida.']);
         }
 
-        if (($question['tipo_resposta'] ?? '') === 'SN' && ! in_array($answerValue, ['1', '2'], true)) {
+        if (($question['tipo_resposta'] ?? '') === 'SOFTWARE') {
+            $repository = (new \App\Models\Oai_pmh\OaiPmhModel())->find($repoId);
+            if ((bool) ($repository['repository_oai_valid'] ?? false)) $answerValue = '1';
+        }
+        if (in_array($question['tipo_resposta'] ?? '', ['SN', 'SOFTWARE'], true) && ! in_array($answerValue, ['1', '2'], true)) {
             return $this->response
                 ->setStatusCode(422)
                 ->setJSON(['saved' => false, 'message' => 'Op??o de resposta inv?lida.']);
@@ -352,6 +364,9 @@ class Application extends Controller
         $answersModel = new \App\Models\Question\CertificacaoQuestoesAnswerModel();
         $postData = $this->request->getPost();
         $saveForLater = ($postData['save_for_later'] ?? '') === '1';
+        foreach ($answersModel->saveSoftwareValidatedAnswers($repoId) as $validatedId) {
+            $postData['questao_' . $validatedId] = '1';
+        }
 
         $axisQuestions = $questionModel->where('nivel1', $currentAxis)->findAll();
         if ($currentLevel2 !== '') {
@@ -432,7 +447,8 @@ class Application extends Controller
                 }
             }
 
-            if (($question['tipo_resposta'] ?? '') === 'SN') {
+            if (in_array($question['tipo_resposta'] ?? '', ['SN', 'SOFTWARE'], true)
+                && array_key_exists('comentario_' . $questionId, $postData)) {
                 $comment = trim((string) ($postData['comentario_' . $questionId] ?? ''));
                 $payload['comentario'] = $comment !== '' ? $comment : null;
             }

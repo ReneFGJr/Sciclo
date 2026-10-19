@@ -11,6 +11,7 @@ class OaiPmhModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
                 'base_url',
+                'repository_oai_valid',
                 'SSL',
                 'status',
                 'submitted_at',
@@ -144,6 +145,9 @@ class OaiPmhModel extends Model
         if ($httpCode >= 400) {
             return ['status' => '500', 'message' => 'Resposta HTTP ' . $httpCode];
         }
+        if (stripos((string) $response, '<!DOCTYPE') !== false) {
+            return ['status' => '500', 'message' => 'Resposta XML invalida.'];
+        }
         $previous = libxml_use_internal_errors(true);
         try {
             $xml = simplexml_load_string((string) $response, SimpleXMLElement::class, LIBXML_NONET);
@@ -154,6 +158,11 @@ class OaiPmhModel extends Model
         } finally {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
+        }
+        try {
+            self::identifyFields((string) $response);
+        } catch (\RuntimeException $error) {
+            return ['status' => '500', 'message' => $error->getMessage()];
         }
         return ['status' => '200', 'message' => 'Resposta HTTP ' . $httpCode,
             'identify_xml' => (string) $response,
@@ -318,9 +327,44 @@ class OaiPmhModel extends Model
         return $success !== false && $status >= 200 && $status < 300 ? $body : null;
     }
 
-    private function saveIdentification(int $idRepo, string $url, array $result): void
+    public static function identifyFields(string $body): array
     {
-        $fields = ['base_url_oai' => $url, 'status' => 1, 'raw_identify_xml' => $result['identify_xml']];
+        if (trim($body) === '' || stripos($body, '<!DOCTYPE') !== false) throw new \RuntimeException('Resposta Identify invalida.');
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $xml = simplexml_load_string($body, SimpleXMLElement::class, LIBXML_NONET);
+            if ($xml === false || $xml->getName() !== 'OAI-PMH'
+                || $xml->xpath('/*[local-name()="OAI-PMH"]/*[local-name()="error"]')) {
+                throw new \RuntimeException('Resposta Identify invalida.');
+            }
+            $nodes = $xml->xpath('/*[local-name()="OAI-PMH"]/*[local-name()="Identify"]');
+            if (count($nodes ?: []) !== 1) throw new \RuntimeException('Dados Identify ausentes.');
+            $fields = [];
+            foreach (['repositoryName' => 'repository_name', 'protocolVersion' => 'protocol_version',
+                'adminEmail' => 'admin_email', 'earliestDatestamp' => 'earliest_datestamp',
+                'deletedRecord' => 'deleted_record', 'granularity' => 'granularity', 'compression' => 'compression'] as $tag => $column) {
+                $values = [];
+                foreach ($nodes[0]->xpath('./*[local-name()="' . $tag . '"]') ?: [] as $value) {
+                    if (trim((string) $value) !== '') $values[] = trim((string) $value);
+                }
+                if (!$values && $tag !== 'compression') throw new \RuntimeException('Campo obrigatorio ausente no Identify: ' . $tag);
+                $fields[$column] = $values ? implode("\n", array_unique($values)) : null;
+            }
+            return $fields;
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+    }
+
+    private function saveIdentification(int $idRepo, string $url, array $result): bool
+    {
+        try {
+            $fields = self::identifyFields($result['identify_xml']);
+        } catch (\RuntimeException $error) {
+            return false;
+        }
+        $fields += ['base_url_oai' => $url, 'status' => 1, 'raw_identify_xml' => $result['identify_xml'], 'repository_oai_valid' => true];
         $software = $result['software'] ?? [];
         if ($software) {
             $record = $this->db->table('repository_software')->where('name', $software['name'])->get()->getRowArray();
@@ -334,7 +378,7 @@ class OaiPmhModel extends Model
                 }
             }
         }
-        $this->update($idRepo, $fields);
+        return $this->update($idRepo, $fields);
     }
 
     public static function oaiCandidates(string $url): array
@@ -362,6 +406,10 @@ class OaiPmhModel extends Model
     function getIdentifyOAI($idRepo)
     {
         $data = $this->find($idRepo);
+        if (!$data) return ['status' => '500', 'message' => 'Repositorio nao encontrado.'];
+        if (!$this->update($idRepo, ['repository_oai_valid' => false])) {
+            return ['status' => '500', 'message' => 'Falha ao atualizar a validacao OAI-PMH.'];
+        }
         if ($data['base_url_oai'] == '')
             {
                 $baseUrl = '';
@@ -378,7 +426,9 @@ class OaiPmhModel extends Model
                 if ($baseUrl === '') {
                     return ['status' => '500', 'message' => 'Não foi possível identificar um endpoint OAI-PMH válido.'];
                 }
-                $this->saveIdentification((int) $idRepo, $baseUrl, $dt);
+                if (!$this->saveIdentification((int) $idRepo, $baseUrl, $dt)) {
+                    return ['status' => '500', 'message' => 'Falha ao salvar os dados Identify do repositorio.'];
+                }
                 return ['status' => '200', 'message' => 'Endpoint OAI-PMH identificado: ' . $baseUrl];
             } else {
                 $url = preg_replace('/([?&])verb=[^&]*/i', '$1verb=Identify', $data['base_url_oai']);
@@ -389,7 +439,9 @@ class OaiPmhModel extends Model
                 if ($result['status'] !== '200') {
                     return $result;
                 }
-                $this->saveIdentification((int) $idRepo, $url, $result);
+                if (!$this->saveIdentification((int) $idRepo, $url, $result)) {
+                    return ['status' => '500', 'message' => 'Falha ao salvar os dados Identify do repositorio.'];
+                }
                 return ['status' => '200', 'message' => 'Endpoint OAI-PMH já identificado: ' . $data['base_url_oai']];
             }
     }

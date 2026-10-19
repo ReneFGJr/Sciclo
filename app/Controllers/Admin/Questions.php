@@ -74,7 +74,7 @@ class Questions extends Controller
         $request = service('request');
         $question = $model->find($id);
         if (!$question) {
-            return redirect()->to(base_url('admin/questions'));
+            return redirect()->to($this->questionListUrl());
         }
         $method = strtolower($request->getMethod());
         if ($method === 'post') {
@@ -96,16 +96,16 @@ class Questions extends Controller
                 'condicional_2' => (int) $request->getPost('condicional_2'),
             ];
             $model->update($id, $data);
-            return redirect()->to(base_url('admin/questions'));
+            return redirect()->to($this->questionListUrl((int) $id));
         }
-        return view('admin/add_question', ['question' => $question, 'targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
+        return view('admin/add_question', ['question' => $question, 'returnFilters' => $this->questionListFilters(), 'returnUrl' => $this->questionListUrl((int) $id), 'targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
     }
 
     public function delete($id)
     {
         $model = new CertificacaoQuestoesModel();
         $model->delete($id);
-        return redirect()->to(base_url('admin/questions'));
+        return redirect()->to($this->questionListUrl());
     }
 
     public function add()
@@ -132,10 +132,28 @@ class Questions extends Controller
                 'condicional_2' => (int) $request->getPost('condicional_2'),
             ];
             $model->insert($data);
-            return redirect()->to(base_url('admin/questions'));
+            return redirect()->to($this->questionListUrl());
         }
-        return view('admin/add_question', ['targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
+        return view('admin/add_question', ['returnFilters' => $this->questionListFilters(), 'returnUrl' => $this->questionListUrl(), 'targetQuestions' => $model->orderBy('criterio', 'ASC')->orderBy('id', 'ASC')->findAll()]);
     }
+    private function questionListFilters(): array
+    {
+        $request = service('request');
+        $filters = [];
+        foreach (['nivel', 'busca'] as $key) {
+            $value = $request->getPost('return_' . $key) ?? $request->getGet($key);
+            if (is_string($value) && $value !== '') $filters[$key] = $value;
+        }
+        return $filters;
+    }
+
+    private function questionListUrl(?int $questionId = null): string
+    {
+        $query = http_build_query($this->questionListFilters(), '', '&', PHP_QUERY_RFC3986);
+        return site_url('admin/questions') . ($query !== '' ? '?' . $query : '')
+            . ($questionId !== null ? '#question-' . $questionId : '');
+    }
+
     private function validConditionalTargets(CertificacaoQuestoesModel $model, ?int $currentId): bool
     {
         foreach (['condicional_1', 'condicional_2'] as $field) {

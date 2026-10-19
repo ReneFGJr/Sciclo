@@ -17,7 +17,7 @@ class QuestionnaireBranching
         foreach ($questions as $index => $question) {
             $id = (int) $question['id'];
             $answer = (string) ($answers[$id] ?? '');
-            if (isset($skipped[$id]) || ($question['tipo_resposta'] ?? '') !== 'SN' || !in_array($answer, ['1', '2'], true)) continue;
+            if (isset($skipped[$id]) || !in_array($question['tipo_resposta'] ?? '', ['SN', 'SOFTWARE'], true) || !in_array($answer, ['1', '2'], true)) continue;
             $target = (int) ($question['condicional_' . $answer] ?? 0);
             $end = $positions[$target] ?? -1;
             if ($end <= $index || (string) $questions[$end]['criterio'] !== (string) $question['criterio']) continue;

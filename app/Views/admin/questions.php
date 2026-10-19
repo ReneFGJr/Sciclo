@@ -6,12 +6,14 @@
 
 <?php
 $questions = isset($questions) && is_array($questions) ? $questions : [];
+$filterQuery = http_build_query(['nivel' => $selectedLevel ?? '', 'busca' => $search ?? ''], '', '&', PHP_QUERY_RFC3986);
+
 ?>
 
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="fw-bold mb-0">Questões de Certificação</h1>
-        <a href="<?= base_url('admin/questions/add') ?>" class="btn btn-success btn-lg">
+        <a href="<?= esc(site_url('admin/questions/add') . '?' . $filterQuery, 'attr') ?>" class="btn btn-success btn-lg">
             <i class="bi bi-plus-circle me-2"></i> Adicionar Questão
         </a>
     </div>
@@ -71,7 +73,7 @@ $questions = isset($questions) && is_array($questions) ? $questions : [];
                 </tr>
                 <?php $currentLevel2 = $level2; ?>
             <?php endif; ?>
-            <tr>
+            <tr id="question-<?= (int) $q['id'] ?>" style="scroll-margin-top: 6rem;">
                 <td><?= $q['id'] ?></td>
                 <td><?= esc($q['criterio']) ?></td>
                 <td><?= esc($q['nivel1']) ?></td>
@@ -85,10 +87,10 @@ $questions = isset($questions) && is_array($questions) ? $questions : [];
                 <td><?= esc($q['condicional_1']) ?></td>
                 <td><?= esc($q['condicional_2']) ?></td>
                 <td class="text-center align-top text-nowrap">
-                    <a href="<?= base_url('admin/questions/edit/' . $q['id']) ?>" class="btn btn-sm btn-primary me-1" title="Editar">
+                    <a href="<?= esc(site_url('admin/questions/edit/' . $q['id']) . '?' . $filterQuery, 'attr') ?>" class="btn btn-sm btn-primary me-1" title="Editar">
                         <i class="bi bi-pencil-square"></i>
                     </a>
-                    <a href="<?= base_url('admin/questions/delete/' . $q['id']) ?>" class="btn btn-sm btn-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta questão?');">
+                    <a href="<?= esc(site_url('admin/questions/delete/' . $q['id']) . '?' . $filterQuery, 'attr') ?>" class="btn btn-sm btn-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta questão?');">
                         <i class="bi bi-trash"></i>
                     </a>
                 </td>

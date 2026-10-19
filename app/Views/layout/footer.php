@@ -156,7 +156,7 @@
           })
           .finally(function () {
             radioInputs.forEach(function (radioEl) {
-              radioEl.disabled = false;
+              radioEl.disabled = cardEl.dataset.softwareValidated === '1';
             });
           });
       });

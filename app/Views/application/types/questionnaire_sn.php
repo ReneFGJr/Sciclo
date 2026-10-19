@@ -179,6 +179,7 @@ $questionId = (int) ($q['id'] ?? 0);
 $questionIdText = (string) $questionId;
 $questionDescription = is_scalar($q['descricao'] ?? null) ? (string) $q['descricao'] : '';
 $selectedAnswer = is_scalar($q['saved_answer'] ?? null) ? trim((string) $q['saved_answer']) : '';
+$softwareValidated = !empty($q['software_validated']);
 $savedComment = is_scalar($q['saved_comment'] ?? null) ? (string) $q['saved_comment'] : '';
 $animationDelay = (($questionId % 5) * 90) . 'ms';
 $nivel3 = trim((string) ($q['nivel3'] ?? ''));
@@ -188,12 +189,16 @@ $q['alternativas'] = [
 ];
 ?>
 
-<div class="card mb-4 questionnaire-sn-card" style="animation-delay: <?= esc($animationDelay) ?>;">
+<div class="card mb-4 questionnaire-sn-card" data-software-validated="<?= $softwareValidated ? '1' : '0' ?>" style="animation-delay: <?= esc($animationDelay) ?>;">
     <div class="card-body">
         <p class="questionnaire-sn-subtitle"><?= $nivel3 !== '' ? '<strong>' . esc($nivel3) . ' - </strong>' : '' ?><?= nl2br(glossario_conteudo($questionDescription)) ?></p>
 
+        <?php if ($softwareValidated): ?>
+            <p class="text-success fw-semibold">Sim &#8212; validado automaticamente pelo OAI-PMH.</p>
+            <input type="hidden" name="questao_<?= esc($questionIdText) ?>" value="1">
+        <?php endif; ?>
         <?php if (!empty($q['alternativas'])): ?>
-            <div class="questionnaire-sn-options" role="radiogroup" aria-label="Questão <?= esc($questionIdText) ?>">
+            <div class="questionnaire-sn-options" <?= $softwareValidated ? 'hidden' : '' ?> role="radiogroup" aria-label="Questão <?= esc($questionIdText) ?>">
                 <?php foreach ($q['alternativas'] as $alt): ?>
                     <?php
                     $optionId = is_scalar($alt['id'] ?? null) ? (string) $alt['id'] : '';
@@ -215,6 +220,7 @@ $q['alternativas'] = [
                             id="alt_<?= esc($questionIdText) ?>_<?= esc($optionId) ?>"
                             value="<?= esc($optionId) ?>"
                             <?= $selectedAnswer === $optionId ? 'checked' : '' ?>
+                            <?= $softwareValidated ? 'disabled' : '' ?>
                             required>
                         <label class="questionnaire-sn-label <?= esc($labelClass) ?>" for="alt_<?= esc($questionIdText) ?>_<?= esc($optionId) ?>">
                             <span class="questionnaire-sn-text text-color-<?= esc($optionId) ?>"><?= esc($optionText) ?></span>
@@ -225,11 +231,13 @@ $q['alternativas'] = [
             </div>
         <?php endif; ?>
 
+        <?php if (!$softwareValidated): ?>
         <div class='questionnaire-sn-comment'>
             <label class='form-label fw-semibold' for='comentario_<?= esc($questionIdText) ?>'>Coment&#225;rios</label>
             <textarea class='form-control questionnaire-sn-comment-input' name='comentario_<?= esc($questionIdText) ?>' id='comentario_<?= esc($questionIdText) ?>' maxlength='10000' placeholder='Adicione um coment&#225;rio sobre esta resposta (opcional).'><?= esc($savedComment) ?></textarea>
             <div class='form-text'>O coment&#225;rio ser&#225; salvo junto com a resposta. (opcional)</div>
         </div>
         <?= view('application/types/questionnaire_evidence', ['q' => $q]) ?>
+        <?php endif; ?>
     </div>
 </div>
