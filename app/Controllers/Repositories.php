@@ -40,6 +40,7 @@ class Repositories extends BaseController
             'criteriaGroups' => $criteriaGroups,
             'answers' => $answers,
             'evidencesByQuestion' => $evidencesByQuestion,
+            'fillingTime' => \App\Libraries\RepositorySummary::fillingTime($answers, $repository['submitted_at'] ?? null),
             'summary' => \App\Libraries\RepositorySummary::build($criteriaGroups, $answers, $evidencesByQuestion),
         ]);
     }

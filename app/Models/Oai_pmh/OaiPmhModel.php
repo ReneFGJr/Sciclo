@@ -89,39 +89,22 @@ class OaiPmhModel extends Model
     {
         $url = trim((string) $url);
 
-        if (! $this->validURL($url)) {
-            $complement = ['/oai','/oai-pmh'];
-            foreach ($complement as $comp) {
-                $testUrl = $url . $comp;
-                echo '<h5>'.$testUrl.'</h5>';
-                if ($this->validURL($testUrl)) {
-                    $url = $testUrl;
-                    break;
-                }
-            }
-
-             if (! $this->validURL($url)) {
-                return null;
-            }
+        if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL)
+            || !in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)) return null;
+        $userId = session('logged_in') ? (int) session('user_id') : 0;
+        if ($userId > 0) {
+            $existing = $this->where('base_url', $url)->where('submitted_by', $userId)->first();
+        } else {
+            $existingId = (int) (session('repo_id') ?? 0);
+            $existing = $existingId > 0 ? $this->where('id', $existingId)->where('base_url', $url)->where('submitted_by', null)->first() : null;
         }
-
-        if ($url === '') {
-            return null;
-        }
-
-        $existing = $this->where('base_url', $url)->first();
-
-        if (! empty($existing)) {
-            return (int) $existing['id'];
-        }
-
-        $data = [
+        if ($existing) return (int) $existing['id'];
+        $id = $this->insert([
             'base_url' => $url,
+            'submitted_by' => $userId > 0 ? $userId : null,
             'created_at' => date('Y-m-d H:i:s'),
-        ];
-
-        $this->insert($data);
-        return $this->getInsertID();
+        ]);
+        return $id !== false ? (int) $id : null;
     }
 
     function validURLOAI($url)
@@ -364,7 +347,8 @@ class OaiPmhModel extends Model
         } catch (\RuntimeException $error) {
             return false;
         }
-        $fields += ['base_url_oai' => $url, 'status' => 1, 'raw_identify_xml' => $result['identify_xml'], 'repository_oai_valid' => true];
+        $currentStatus = (int) ($this->find($idRepo)['status'] ?? 0);
+        $fields += ['base_url_oai' => $url, 'status' => max(1, $currentStatus), 'raw_identify_xml' => $result['identify_xml'], 'repository_oai_valid' => true];
         $software = $result['software'] ?? [];
         if ($software) {
             $record = $this->db->table('repository_software')->where('name', $software['name'])->get()->getRowArray();

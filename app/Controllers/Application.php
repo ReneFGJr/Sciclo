@@ -564,12 +564,35 @@ class Application extends Controller
             return redirect()->to(base_url($pendingPath))->with('questionnaire_error', $message);
         }
         session()->remove('questionnaire_pending_repo');
-        $repositoryModel = new \App\Models\Oai_pmh\OaiPmhModel();
-        $repositoryModel->where('id', $repoId)->where('submitted_at', null)
-            ->set(['submitted_at' => date('Y-m-d H:i:s')])->update();
-        session()->setFlashdata('questionnaire_success', 'Questionário finalizado e enviado para avaliação.');
-        $returnPath = 'application/form/' . $currentAxis . ($currentLevel2 !== '' ? '/' . $currentLevel2 : '');
-        return redirect()->to(base_url($returnPath));
+        return redirect()->to(site_url('application/review'));
+    }
+
+    public function reviewSubmission()
+    {
+        $repoId = (int) (session('repo_id') ?? 0);
+        $repositories = new \App\Models\Oai_pmh\OaiPmhModel();
+        $repo = $repoId > 0 ? $repositories->find($repoId) : null;
+        if (!$repo) return redirect()->to(site_url('application'));
+        if (!empty($repo['submitted_by']) && (!session('logged_in') || (int) $repo['submitted_by'] !== (int) session('user_id'))) {
+            return $this->response->setStatusCode(403)->setBody('Este repositório pertence a outro usuário.');
+        }
+        $this->saveSkippedAnswers($repoId);
+        $progress = $this->questionnaireProgress($repoId);
+        if (strtolower($this->request->getMethod()) === 'post') {
+            if ($progress['total'] === 0 || $progress['pending'] > 0) {
+                return redirect()->to(site_url('application/review'))->with('review_error', 'Existem respostas pendentes. Revise o preenchimento antes de enviar.');
+            }
+            if ($this->request->getPost('confirm_submission') !== '1') {
+                return redirect()->to(site_url('application/review'))->with('review_error', 'Confirme o termo para enviar a submissão.');
+            }
+            if (empty($repo['submitted_at'])) {
+                if (!$repositories->update($repoId, ['status' => 2, 'submitted_at' => date('Y-m-d H:i:s')])) {
+                    return redirect()->to(site_url('application/review'))->with('review_error', 'Não foi possível enviar a submissão. Tente novamente.');
+                }
+            }
+            return redirect()->to(site_url('application/review'))->with('review_success', 'Submissão enviada para avaliação.');
+        }
+        return view('application/submission_review', ['repo' => $repo, 'progress' => $progress]);
     }
 
     public function saveEvidence()
@@ -750,6 +773,11 @@ class Application extends Controller
 
         $OAI = new \App\Models\Oai_pmh\OaiPmhModel();
         $RepoID = $OAI->saveURL($repoLink);
+        if (!$RepoID) {
+            echo view('components/message', ['status' => '500', 'message' => 'Nao foi possivel cadastrar a URL do repositorio.']);
+            return;
+        }
+        session()->set('repo_id', (int) $RepoID);
         if ($RepoID && session('logged_in')) {
             $OAI->registerSubmitter((int) $RepoID, (int) session('user_id'));
         }

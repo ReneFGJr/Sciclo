@@ -36,7 +36,7 @@ $fields = [
     </ul>
     <div class="tab-content">
     <div class="tab-pane fade" id="repository-summary" role="tabpanel" aria-labelledby="repository-summary-tab" tabindex="0">
-        <?= view('repositories/summary', ['summary' => $summary]) ?>
+        <?= view('repositories/summary', ['summary' => $summary, 'fillingTime' => $fillingTime]) ?>
     </div>
     <div class="tab-pane fade show active" id="repository-data" role="tabpanel" aria-labelledby="repository-data-tab" tabindex="0">
     <div class="card shadow-sm">

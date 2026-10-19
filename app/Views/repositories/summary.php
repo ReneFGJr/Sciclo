@@ -12,15 +12,22 @@ $percent = static fn ($value) => number_format($value, 1, ',', '.') . '%';
 <?php if (!$summary['total']): ?>
     <div class="alert alert-info">Nenhuma questão disponível para compor o resumo.</div>
 <?php else: ?>
-    <div class="row g-3 mb-4">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-3 mb-4">
         <?php foreach (['total' => 'Questões', 'answered' => 'Respondidas', 'pending' => 'Pendentes', 'evidences' => 'Evidências vinculadas'] as $key => $label): ?>
-            <div class="col-6 col-xl-3">
+            <div class="col">
                 <div class="card shadow-sm h-100"><div class="card-body">
                     <div class="text-muted"><?= esc($label) ?></div>
                     <div class="fs-2 fw-bold"><?= $summary[$key] ?></div>
                 </div></div>
             </div>
         <?php endforeach; ?>
+        <div class="col">
+            <div class="card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted">Tempo de preenchimento</div>
+                <div class="fs-4 fw-bold"><?= esc($fillingTime['label'] ?? 'Indisponível') ?></div>
+                <div class="small text-muted mt-1">Da primeira resposta ao envio.</div>
+            </div></div>
+        </div>
     </div>
     <div class="card shadow-sm mb-4"><div class="card-body">
         <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">

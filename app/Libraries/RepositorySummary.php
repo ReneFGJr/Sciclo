@@ -3,6 +3,34 @@ namespace App\Libraries;
 
 class RepositorySummary
 {
+    public static function fillingTime(array $answers, ?string $submittedAt): array
+    {
+        $parse = static function (?string $value): ?\DateTimeImmutable {
+            if (!$value) return null;
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $value);
+            $errors = \DateTimeImmutable::getLastErrors();
+            return $date !== false && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0)) ? $date : null;
+        };
+        $first = null;
+        foreach ($answers as $answer) {
+            $created = $parse($answer['created_at'] ?? null);
+            if ($created !== null && ($first === null || $created < $first)) $first = $created;
+        }
+        $submitted = $parse($submittedAt);
+        if ($submitted === null || $first === null || $submitted < $first) {
+            return ['seconds' => null, 'label' => $submitted === null ? 'Ainda nao enviado' : 'Indisponivel'];
+        }
+        $seconds = $submitted->getTimestamp() - $first->getTimestamp();
+        $remaining = $seconds;
+        $parts = [];
+        foreach ([86400 => 'd', 3600 => 'h', 60 => 'min'] as $unit => $label) {
+            $count = intdiv($remaining, $unit);
+            $remaining %= $unit;
+            if ($count > 0) $parts[] = $count . ' ' . $label;
+        }
+        return ['seconds' => $seconds, 'label' => $parts ? implode(' ', $parts) : $seconds . ' s'];
+    }
+
     public static function build(array $criteriaGroups, array $answers, array $evidencesByQuestion): array
     {
         $empty = ['total' => 0, 'answered' => 0, 'pending' => 0, 'yes' => 0, 'no' => 0,

@@ -47,3 +47,13 @@ expectSummary($empty['total'] === 0 && $empty['completion'] === 0, 'Empty questi
 $unanswered = App\Libraries\RepositorySummary::build($groups, [], []);
 expectSummary($unanswered['pending'] === 9 && $unanswered['answered'] === 0, 'No answers yet');
 echo "PASS: summary totals, levels, empty answers, zero values, INFO exclusions and evidence counts.\n";
+
+$duration = App\Libraries\RepositorySummary::fillingTime([
+    ['created_at' => '2026-10-18 12:00:00'], ['created_at' => '2026-10-17 10:30:00'], ['created_at' => null],
+], '2026-10-19 13:45:00');
+expectSummary($duration['seconds'] === 184500 && $duration['label'] === '2 d 3 h 15 min', 'Duration uses earliest answer');
+expectSummary(App\Libraries\RepositorySummary::fillingTime([], '2026-10-19 13:45:00')['seconds'] === null, 'Missing first answer');
+expectSummary(App\Libraries\RepositorySummary::fillingTime([['created_at' => '2026-10-18 12:00:00']], null)['seconds'] === null, 'Draft has no submission duration');
+expectSummary(App\Libraries\RepositorySummary::fillingTime([['created_at' => '2026-10-20 12:00:00']], '2026-10-19 12:00:00')['seconds'] === null, 'Negative duration rejected');
+expectSummary(App\Libraries\RepositorySummary::fillingTime([['created_at' => '0000-00-00 00:00:00']], '2026-10-19 12:00:00')['seconds'] === null, 'Invalid date rejected');
+echo "PASS: filling duration, earliest answer, missing dates and invalid intervals.\n";
