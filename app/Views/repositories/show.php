@@ -110,7 +110,7 @@ $fields = [
                             <?php foreach ($criterionEvidences as $evidence): ?>
                                 <?php
                                 $url = (string) ($evidence['url'] ?? '');
-                                $title = trim((string) ($evidence['titulo'] ?? '')) ?: $url;
+                                $title = trim((string) ($evidence['nome'] ?? $evidence['titulo'] ?? '')) ?: $url;
                                 $safeUrl = filter_var($url, FILTER_VALIDATE_URL)
                                     && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
                                 ?>

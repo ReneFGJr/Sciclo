@@ -14,6 +14,7 @@ class EvidencyModel extends Model
         'url',
         'url_hash',
         'titulo',
+        'nome',
         'descricao',
         'created_at',
         'updated_at',

@@ -31,7 +31,7 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
             <?php foreach ($questionEvidences as $evidence): ?>
                 <?php
                 $evidenceId = (int) ($evidence['id'] ?? 0);
-                $evidenceTitle = (string) ($evidence['titulo'] ?? $evidence['url'] ?? 'Evidência');
+                $evidenceTitle = (string) ($evidence['nome'] ?? $evidence['titulo'] ?? $evidence['url'] ?? 'Evidência');
                 $evidenceUrl = (string) ($evidence['url'] ?? '');
                 $evidenceDescription = (string) ($evidence['descricao'] ?? '');
                 ?>
@@ -55,7 +55,8 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                             data-evidence-id="<?= esc((string) $evidenceId) ?>"
                             data-evidence-url="<?= esc($evidenceUrl) ?>"
                             data-evidence-descricao="<?= esc($evidenceDescription) ?>"
-                            data-evidence-title="<?= esc($evidenceTitle) ?>">
+                            data-evidence-title="<?= esc($evidenceTitle) ?>"
+                            data-evidence-name="<?= esc($evidenceTitle, 'attr') ?>">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button
@@ -98,14 +99,20 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                                 <?php foreach ($existingEvidences as $evidence): ?>
                                     <option
                                         value="<?= esc((string) ($evidence['id'] ?? '')) ?>"
+                                        data-nome="<?= esc((string) ($evidence['nome'] ?? $evidence['titulo'] ?? ''), 'attr') ?>"
                                         data-url="<?= esc((string) ($evidence['url'] ?? '')) ?>"
                                         data-descricao="<?= esc((string) ($evidence['descricao'] ?? '')) ?>">
-                                        <?= esc((string) ($evidence['titulo'] ?? $evidence['url'] ?? 'Evidência')) ?>
+                                        <?= esc((string) ($evidence['nome'] ?? $evidence['titulo'] ?? $evidence['url'] ?? 'Evidência')) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                     <?php endif; ?>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="evidence_name_<?= $questionId ?>">Nome da evid&#234;ncia</label>
+                        <input type="text" class="form-control evidence-name" id="evidence_name_<?= $questionId ?>" name="nome" form="<?= esc($evidenceFormId) ?>" maxlength="255" required>
+                    </div>
 
                     <div class="mb-3">
                         <label class="form-label" for="evidence_url_<?= esc((string) $questionId) ?>">URL da evidência</label>
@@ -117,9 +124,7 @@ $currentAxis = is_scalar($q['current_axis'] ?? null) ? (string) $q['current_axis
                         <textarea class="form-control evidence-description" id="evidence_desc_<?= esc((string) $questionId) ?>" name="descricao" rows="4" placeholder="Descreva o que esta evidência comprova"></textarea>
                     </div>
 
-                    <div class="alert alert-info mb-0">
-                        O título será obtido automaticamente a partir da URL informada.
-                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

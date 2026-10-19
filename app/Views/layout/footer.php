@@ -189,8 +189,10 @@
         var existingSelect = modalEl.querySelector('.evidence-existing-select');
         var urlInput = modalEl.querySelector('.evidence-url');
         var descInput = modalEl.querySelector('.evidence-description');
+        var nameInput = modalEl.querySelector('.evidence-name');
         var titleEl = modalEl.querySelector('.modal-title');
 
+        if (nameInput) nameInput.value = buttonEl.getAttribute('data-evidence-name') || '';
         if (editIdInput) {
           editIdInput.value = buttonEl.getAttribute('data-evidence-id') || '';
         }
@@ -269,6 +271,7 @@
         var existingSelect = modalEl.querySelector('.evidence-existing-select');
         var urlInput = modalEl.querySelector('.evidence-url');
         var descInput = modalEl.querySelector('.evidence-description');
+        var nameInput = modalEl.querySelector('.evidence-name');
         var titleEl = modalEl.querySelector('.modal-title');
 
         if (editIdInput) {
@@ -280,6 +283,7 @@
         if (urlInput) {
           urlInput.value = '';
         }
+        if (nameInput) nameInput.value = '';
         if (descInput) {
           descInput.value = '';
         }
@@ -298,12 +302,14 @@
 
         var urlInput = modal.querySelector('.evidence-url');
         var descInput = modal.querySelector('.evidence-description');
+        var nameInput = modal.querySelector('.evidence-name');
         var selectedOption = selectEl.options[selectEl.selectedIndex];
 
         if (!urlInput || !descInput || !selectedOption) {
           return;
         }
 
+        if (nameInput) nameInput.value = selectedOption.getAttribute('data-nome') || '';
         var url = selectedOption.getAttribute('data-url') || '';
         var descricao = selectedOption.getAttribute('data-descricao') || '';
 
@@ -331,12 +337,17 @@
         var existingSelect = modal.querySelector('.evidence-existing-select');
         var urlInput = modal.querySelector('.evidence-url');
         var descInput = modal.querySelector('.evidence-description');
+        var nameInput = modal.querySelector('.evidence-name');
         var editIdInput = modal.querySelector('.evidence-edit-id');
 
         if (!action || !questionInput || !axisInput || !urlInput || !descInput) {
           return;
         }
 
+        if (nameInput && !nameInput.checkValidity()) {
+          nameInput.reportValidity();
+          return;
+        }
         if (!urlInput.checkValidity()) {
           urlInput.reportValidity();
           return;
@@ -348,6 +359,7 @@
         postForm.style.display = 'none';
 
         var fields = [
+          { name: 'nome', value: nameInput ? nameInput.value : '' },
           { name: 'questao_id', value: questionInput.value || '' },
           { name: 'current_axis', value: axisInput.value || '' },
           { name: 'edit_id', value: editIdInput ? (editIdInput.value || '') : '' },

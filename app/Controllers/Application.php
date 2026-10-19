@@ -618,6 +618,7 @@ class Application extends Controller
 
         $evidenceModel = new \App\Models\Question\EvidencyModel();
 
+        $nome = trim((string) ($this->request->getPost('nome') ?? ''));
         $url = trim((string) ($this->request->getPost('url') ?? ''));
         $descricao = trim((string) ($this->request->getPost('descricao') ?? ''));
 
@@ -627,6 +628,7 @@ class Application extends Controller
                 ->where('oai_pmh_id', $repoId)
                 ->first();
             if ($existing) {
+                if ($nome === '') $nome = trim((string) ($existing['nome'] ?? $existing['titulo'] ?? ''));
                 if ($url === '') {
                     $url = (string) ($existing['url'] ?? '');
                 }
@@ -634,6 +636,12 @@ class Application extends Controller
                     $descricao = (string) ($existing['descricao'] ?? '');
                 }
             }
+        }
+
+        if ($nome === '' || mb_strlen($nome, 'UTF-8') > 255) {
+            session()->setFlashdata('evidence_error', 'Informe o nome da evidência com até 255 caracteres.');
+            session()->setFlashdata('evidence_modal_question', $questionId);
+            return redirect()->to($this->evidenceReturnUrl($questionId, $currentAxis));
         }
 
         if ($questionId <= 0 || $url === '') {
@@ -644,10 +652,7 @@ class Application extends Controller
 
         $urlHash = hash('sha256', strtolower($url));
 
-        $titulo = $this->resolveEvidenceTitle($url);
-        if ($titulo === '') {
-            $titulo = $url;
-        }
+        $titulo = $nome;
 
         $payload = [
             'oai_pmh_id' => $repoId,
@@ -655,6 +660,7 @@ class Application extends Controller
             'url' => $url,
             'url_hash' => $urlHash,
             'titulo' => $titulo,
+            'nome' => $nome,
             'descricao' => $descricao,
         ];
 
