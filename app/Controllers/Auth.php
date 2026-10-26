@@ -154,6 +154,17 @@ class Auth extends Controller
                     $repository['evaluationClass'] = 'bg-success';
                 }
             }
+            // Workflow decisions take precedence over individual evaluator assignments.
+            unset($repository);
+            foreach ($repositories as &$repository) {
+                if (!empty($repository['seal_data_avaliation']) && $repository['seal_data_avaliation'] !== '0000-00-00 00:00:00') continue;
+                if (($repository['workflow_status'] ?? '') === 'revisions_required') {
+                    $repository['evaluationStatus'] = 'Revisões necessárias';
+                    $repository['evaluationClass'] = 'bg-warning text-dark';
+                } elseif (($repository['workflow_status'] ?? '') === 'accepted') {
+                    $repository['evaluationStatus'] = 'Aceito para avaliação';
+                }
+            }
             unset($repository);
         }
 

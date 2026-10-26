@@ -123,4 +123,22 @@ class Email extends BaseConfig
      * Enable notify message from server
      */
     public bool $DSN = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        foreach (['EMAIL_TYPE' => 'protocol', 'EMAIL_SMTP' => 'SMTPHost',
+            'EMAIL_FROM' => 'fromEmail', 'EMAIL_USER_AUTH' => 'SMTPUser',
+            'EMAIL_PASSWORD' => 'SMTPPass'] as $key => $property) {
+            $this->$property = (string) env($key, $this->$property);
+        }
+        $this->protocol = strtolower(trim($this->protocol));
+        $this->SMTPPort = (int) env('EMAIL_SMTP_PORT', $this->SMTPPort);
+        // CodeIgniter uses implicit TLS automatically on port 465.
+        // STARTTLS (the default) must not be requested on this port.
+        if ($this->protocol === 'smtp' && $this->SMTPPort === 465) {
+            $this->SMTPCrypto = '';
+        }
+    }
 }

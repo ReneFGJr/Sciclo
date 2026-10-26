@@ -5,6 +5,16 @@ use CodeIgniter\Controller;
 
 class Application extends Controller
 {
+
+    private function editingDenied(int $repoId): bool
+    {
+        $repo = (new \App\Models\Oai_pmh\OaiPmhModel())->find($repoId);
+        if (!$repo) return true;
+        if (!empty($repo['submitted_by']) && (!session('logged_in') || (int) $repo['submitted_by'] !== (int) session('user_id'))) return true;
+        if (!empty($repo['seal_data_avaliation']) && $repo['seal_data_avaliation'] !== '0000-00-00 00:00:00') return true;
+        return !in_array(\App\Libraries\RepositoryWorkflow::status($repo), ['draft', 'revisions_required'], true);
+    }
+
     public function index()
     {
         $repoLink = $this->request->getPost('repo_link');
@@ -207,6 +217,8 @@ class Application extends Controller
 
         $method = strtolower($this->request->getMethod());
 
+        if ($this->editingDenied((int) $id)) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
+
         if ($method === 'post') {
             $OaiPmhModel = new \App\Models\Oai_pmh\OaiPmhModel();
             $OaiPmhModel->update($id, ['repository_type' => $this->request->getPost('questionario')]);
@@ -230,6 +242,7 @@ class Application extends Controller
             ->where('oai_pmh_id', (int) $id)
             ->orderBy('metadata_prefix', 'ASC')
             ->findAll();
+        $data['revision'] = ($data['repo']['workflow_status'] ?? '') === 'revisions_required' ? (new \App\Models\RepositoryMovementModel())->where('oai_pmh_id', (int) $id)->where('to_status', 'revisions_required')->orderBy('id', 'DESC')->first() : null;
         return view('application/application_select_questionnaire', $data);
     }
 
@@ -289,6 +302,7 @@ class Application extends Controller
 
     public function saveQuestionnaireAnswer()
     {
+        if ($this->editingDenied((int) session('repo_id'))) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId <= 0) {
             return $this->response
@@ -358,6 +372,7 @@ class Application extends Controller
 
     public function submitQuestionnaire()
     {
+        if ($this->editingDenied((int) session('repo_id'))) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId <= 0) {
             return redirect()->to(base_url('application'));
@@ -594,9 +609,11 @@ class Application extends Controller
             if ($this->request->getPost('confirm_submission') !== '1') {
                 return redirect()->to(site_url('application/review'))->with('review_error', 'Confirme o termo para enviar a submissão.');
             }
-            if (empty($repo['submitted_at'])) {
-                if (!$repositories->update($repoId, ['status' => 2, 'submitted_at' => date('Y-m-d H:i:s')])) {
-                    return redirect()->to(site_url('application/review'))->with('review_error', 'Não foi possível enviar a submissão. Tente novamente.');
+            if (empty($repo['submitted_at']) || ($repo['workflow_status'] ?? '') === 'revisions_required') {
+                try {
+                    \App\Libraries\RepositoryWorkflow::move($repo, 'submitted', session('user_id') ? (int) session('user_id') : null);
+                } catch (\Throwable $error) {
+                    return redirect()->to(site_url('application/review'))->with('review_error', 'Não foi possível enviar a submissão. Atualize a página e tente novamente.');
                 }
             }
             return redirect()->to(site_url('application/review'))->with('review_success', 'Submissão enviada para avaliação.');
@@ -615,6 +632,7 @@ class Application extends Controller
 
     public function saveEvidence()
     {
+        if ($this->editingDenied((int) session('repo_id'))) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId <= 0) {
             return redirect()->to(base_url('application'));
@@ -710,6 +728,7 @@ class Application extends Controller
 
     public function deleteEvidence($id = null)
     {
+        if ($this->editingDenied((int) session('repo_id'))) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId <= 0) {
             return redirect()->to(base_url('application'));
@@ -733,6 +752,7 @@ class Application extends Controller
 
     public function editEvidence($id = null)
     {
+        if ($this->editingDenied((int) session('repo_id'))) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
         $repoId = (int) (session()->get('repo_id') ?? 0);
         if ($repoId <= 0) {
             return redirect()->to(base_url('application'));

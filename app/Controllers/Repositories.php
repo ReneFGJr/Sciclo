@@ -5,6 +5,51 @@ use App\Models\Oai_pmh\OaiPmhModel;
 
 class Repositories extends BaseController
 {
+
+    public function move($id)
+    {
+        if (!session('logged_in') || !(new \App\Models\UserRuleModel())->isAdministrator((int) session('user_id'))) {
+            return $this->response->setStatusCode(403)->setBody('Acesso negado.');
+        }
+        $repository = (new OaiPmhModel())->find((int) $id);
+        if (!$repository) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        $url = site_url('repositories/' . (int) $id);
+        $target = (string) $this->request->getPost('target');
+        $details = trim((string) $this->request->getPost('details'));
+        if (!in_array($target, ['accepted', 'revisions_required'], true)
+            || ($target === 'revisions_required' && ($details === '' || mb_strlen($details) > 10000))) {
+            return redirect()->to($url)->withInput()->with('workflow_error', 'Informe os detalhes da devolução (até 10.000 caracteres).');
+        }
+        $recipient = null;
+        if ($target === 'revisions_required') {
+            $owner = !empty($repository['submitted_by']) ? (new \App\Models\UserModel())->find($repository['submitted_by']) : null;
+            $recipient = trim((string) ($owner['email'] ?? $repository['admin_email'] ?? ''));
+            if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+                return redirect()->to($url)->withInput()->with('workflow_error', 'A origem não possui um e-mail válido. Atualize o cadastro do responsável antes de devolver.');
+            }
+        }
+        try {
+            $movementId = \App\Libraries\RepositoryWorkflow::move($repository, $target, (int) session('user_id'), $details, $recipient);
+        } catch (\DomainException $error) {
+            return redirect()->to($url)->withInput()->with('workflow_error', $error->getMessage());
+        } catch (\Throwable $error) {
+            return redirect()->to($url)->withInput()->with('workflow_error', 'Não foi possível registrar a movimentação. Tente novamente.');
+        }
+        if ($recipient && !\App\Libraries\RepositoryWorkflow::notify($movementId)) {
+            return redirect()->to($url)->with('workflow_error', 'Devolução registrada e edição liberada, mas o e-mail não foi enviado. Verifique a configuração de e-mail e use Reenviar no histórico.');
+        }
+        return redirect()->to($url)->with('workflow_success', $recipient ? 'Repositório devolvido à origem. Orientações enviadas por e-mail.' : 'Repositório aceito para avaliação.');
+    }
+
+    public function retryNotification($id, $movementId)
+    {
+        if (!session('logged_in') || !(new \App\Models\UserRuleModel())->isAdministrator((int) session('user_id'))) return $this->response->setStatusCode(403);
+        $movement = (new \App\Models\RepositoryMovementModel())->find((int) $movementId);
+        if (!$movement || (int) $movement['oai_pmh_id'] !== (int) $id) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        $sent = \App\Libraries\RepositoryWorkflow::notify((int) $movementId);
+        return redirect()->to(site_url('repositories/' . (int) $id))->with($sent ? 'workflow_success' : 'workflow_error', $sent ? 'E-mail enviado à origem.' : 'Não foi possível reenviar. Verifique as configurações de e-mail.');
+    }
+
     public function show($id)
     {
         $repository = (new OaiPmhModel())->find((int) $id);
@@ -52,6 +97,7 @@ class Repositories extends BaseController
             static fn ($user) => (int) $user['id'] !== (int) ($repository['submitted_by'] ?? 0)
                 && !in_array((int) $user['id'], array_map('intval', $assignedIds), true)));
         return view('repositories/show', [
+            'movements' => (new \App\Models\RepositoryMovementModel())->select('repository_movements.*, users.name AS actor_name')->join('users', 'users.id = repository_movements.actor_id', 'left')->where('oai_pmh_id', (int) $id)->orderBy('repository_movements.id', 'DESC')->findAll(),
             'evaluationCounts' => $evaluationCounts,
             'evaluations' => $evaluations,
             'availableEvaluators' => $availableEvaluators,
@@ -108,16 +154,19 @@ class Repositories extends BaseController
     public function index()
     {
         $groups = [
+            'revisions_required' => ['title' => 'Revisões necessárias', 'badge' => 'bg-warning text-dark', 'items' => []],
+            'accepted' => ['title' => 'Aceitos para avaliação', 'badge' => 'bg-info text-dark', 'items' => []],
             'submitted' => ['title' => 'Enviados para avaliação', 'badge' => 'bg-primary', 'items' => []],
             'evaluated' => ['title' => 'Avaliados', 'badge' => 'bg-success', 'items' => []],
             'draft' => ['title' => 'Em processo de submissão', 'badge' => 'bg-secondary', 'items' => []],
         ];
         $repositories = (new OaiPmhModel())
-            ->select('id, repository_name, base_url, repository_type, created_at, updated_at, submitted_at, seal_data_avaliation')
+            ->select('*')
             ->orderBy('repository_name', 'ASC')->orderBy('id', 'ASC')->findAll();
         foreach ($repositories as $repository) {
             $evaluated = !empty($repository['seal_data_avaliation']) && $repository['seal_data_avaliation'] !== '0000-00-00 00:00:00';
             $key = $evaluated ? 'evaluated' : (!empty($repository['submitted_at']) ? 'submitted' : 'draft');
+            if (!$evaluated && in_array($repository['workflow_status'] ?? '', ['revisions_required', 'accepted'], true)) $key = $repository['workflow_status'];
             $groups[$key]['items'][] = $repository;
         }
         return view('repositories/index', ['groups' => $groups]);

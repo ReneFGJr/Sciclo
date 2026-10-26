@@ -24,7 +24,7 @@
                     <td class="text-end"><?= esc(number_format($group['completion'], 1, ',', '.')) ?>%</td></tr>
             <?php endforeach; ?></tbody>
         </table></div>
-        <?php if (!empty($repo['submitted_at'])): ?>
+        <?php if (!empty($repo['submitted_at']) && ($repo['workflow_status'] ?? '') !== 'revisions_required'): ?>
             <div class="alert alert-success">Este reposit&#243;rio j&#225; foi enviado para avalia&#231;&#227;o.</div>
             <a href="<?= site_url('application/form/select/' . (int) $repo['id']) ?>" class="btn btn-outline-primary">Voltar ao resumo</a>
         <?php else: ?>

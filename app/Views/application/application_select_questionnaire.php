@@ -3,6 +3,7 @@ echo view('layout/header');
 echo view('layout/navbar');
 ?>
 <div class="container py-5">
+    <?php if (!empty($revision)): ?><div class="alert alert-warning"><h2 class="h5">Revisões necessárias</h2><p class="mb-2"><?= nl2br(esc($revision['details'])) ?></p><p class="mb-0">Complete as informações e confirme o reenvio para avaliação ao concluir.</p></div><?php endif ?>
     <?php $selectedType = trim((string) ($repo['repository_type'] ?? '')); ?>
     <div class="row g-4">
         <div class="col-lg-8">

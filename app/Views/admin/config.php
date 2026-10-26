@@ -5,6 +5,7 @@
 <h2>Configurações</h2>
 <div class="row g-3 my-4">
     <?php foreach ([
+        'admin/email_test' => 'Testar e-mail',
         'admin/users' => 'Usuários',
         'admin/questions' => 'Editar questões',
         'admin/glossario' => 'Editar glossário',

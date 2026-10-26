@@ -30,7 +30,7 @@
             <div class="progress-bar" style="width: <?= $summary['completion'] ?>%"></div>
           </div>
           <p class="small text-muted mt-2 mb-3"><?= $summary['answered'] ?> de <?= $summary['total'] ?> questões respondidas.</p>
-          <?php if (!empty($repository['submitted_at'])): ?>
+          <?php if (!empty($repository['submitted_at']) && ($repository['workflow_status'] ?? '') !== 'revisions_required'): ?>
             <p class="small mb-0">Enviado em <?= esc(date('d/m/Y H:i', strtotime($repository['submitted_at']))) ?></p>
           <?php else: ?>
             <a class="btn btn-outline-primary align-self-start" href="<?= site_url('application/form/select/' . $repository['id']) ?>">Continuar submissão</a>

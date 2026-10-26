@@ -56,6 +56,7 @@ $routes->group('admin', function ($routes) {
 $routes->match(['get', 'post'], 'contact', 'About::contact');
 $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($routes) {
     $routes->get('/', 'Admin\Rules::config');
+    $routes->match(['get', 'post'], 'email_test', 'Admin\EmailTest::index');
     $routes->get('users', 'Admin\Users::index');
     $routes->post('users/(:num)/access-as', 'Admin\Users::accessAs/$1');
     $routes->match(['get', 'post'], 'users/create', 'Admin\Users::create');
@@ -69,6 +70,8 @@ $routes->group('admin', ['filter' => ['administrator', 'csrf']], function ($rout
     $routes->match(['get', 'post'], 'config/rules/edit/(:num)', 'Admin\Rules::edit/$1');
     $routes->post('config/rules/delete/(:num)', 'Admin\Rules::delete/$1');
 });
+$routes->post('repositories/(:num)/movement', 'Repositories::move/$1', ['filter' => ['administrator', 'csrf']]);
+$routes->post('repositories/(:num)/movements/(:num)/retry', 'Repositories::retryNotification/$1/$2', ['filter' => ['administrator', 'csrf']]);
 $routes->get('repositories', 'Repositories::index', ['filter' => 'administrator']);
 $routes->get('repositories/(:num)', 'Repositories::show/$1', ['filter' => 'administrator']);
 

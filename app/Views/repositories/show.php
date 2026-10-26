@@ -6,6 +6,8 @@ $type = $repository['repository_type'] ?? '';
 $types = ['publicacao' => 'Publicação', 'dados' => 'Dados', 'ambos' => 'Publicação e Dados', 'arquivistico' => 'Arquivístico'];
 $evaluated = !empty($repository['seal_data_avaliation']) && $repository['seal_data_avaliation'] !== '0000-00-00 00:00:00';
 $status = $evaluated ? 'Avaliado' : (!empty($repository['submitted_at']) ? 'Enviado para avaliação' : 'Em processo de submissão');
+$status = \App\Libraries\RepositoryWorkflow::LABELS[\App\Libraries\RepositoryWorkflow::status($repository)] ?? $status;
+if ($evaluated) $status = 'Avaliado';
 $fields = [
     'id' => 'Identificador',
     'base_url' => 'URL do repositório',
@@ -20,6 +22,7 @@ $fields = [
 ];
 ?>
 <main class="container py-5">
+    <?= view('repositories/workflow', ['repository' => $repository, 'movements' => $movements]) ?>
     <a class="btn btn-outline-secondary mb-4" href="<?= base_url('repositories') ?>"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos repositórios</a>
     <h1 class="fw-bold mb-3"><?= esc($repository['repository_name'] ?: 'Repositório #' . $repository['id']) ?></h1>
     <ul class="nav nav-tabs mb-4" role="tablist" aria-label="Detalhes do repositório">

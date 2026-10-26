@@ -67,3 +67,11 @@
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+# E-MAIL
+EMAIL_TYPE=smtp
+EMAIL_SMTP=smtp.gmail.com
+EMAIL_SMTP_PORT=465
+EMAIL_FROM=seuemail@gmail.com
+EMAIL_USER_AUTH=seuemail@gmail.com
+EMAIL_PASSWORD=sua_senha_de_aplicativo
