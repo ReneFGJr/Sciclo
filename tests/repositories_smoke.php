@@ -23,6 +23,15 @@ foreach (['draft' => 'Draft marker', 'submitted' => 'Submitted marker', 'evaluat
     check(isset($section[0]) && str_contains($section[0], $name), 'Correct repository group: ' . $key);
     check(substr_count($html, $name) === 1, 'No duplicated repositories');
 }
+$repository = $rows[1] + ['id' => 5, 'submitted_by' => 42, 'base_url_oai' => 'javascript:alert(1)'];
+$data = ['repository' => $repository, 'status' => 'Enviado', 'types' => [], 'type' => '',
+    'submitter' => ['id' => 42, 'name' => '<script>owner</script>', 'email' => 'owner@example.test']];
+$detail = view('repositories/data', $data);
+check(str_contains($detail, 'owner@example.test') && str_contains($detail, '#42'), 'Submitter identity displayed');
+check(!str_contains($detail, '<script>owner</script>') && str_contains($detail, '&lt;script&gt;'), 'Submitter name escaped');
+check(!str_contains($detail, 'href="javascript:'), 'Unsafe repository link not clickable');
+$data['submitter'] = null;
+check(str_contains(view('repositories/data', $data), 'não está disponível'), 'Missing submitter handled');
 ob_end_clean();
 echo "PASS: repository classification and view rendering (SQLite memory).
 ";

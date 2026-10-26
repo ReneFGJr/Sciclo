@@ -8,18 +8,7 @@ $evaluated = !empty($repository['seal_data_avaliation']) && $repository['seal_da
 $status = $evaluated ? 'Avaliado' : (!empty($repository['submitted_at']) ? 'Enviado para avaliação' : 'Em processo de submissão');
 $status = \App\Libraries\RepositoryWorkflow::LABELS[\App\Libraries\RepositoryWorkflow::status($repository)] ?? $status;
 if ($evaluated) $status = 'Avaliado';
-$fields = [
-    'id' => 'Identificador',
-    'base_url' => 'URL do repositório',
-    'base_url_oai' => 'Endpoint OAI-PMH',
-    'admin_email' => 'E-mail de contato',
-    'repository_software_version' => 'Versão do software',
-    'protocol_version' => 'Versão do protocolo',
-    'earliest_datestamp' => 'Registro mais antigo',
-    'deleted_record' => 'Política de registros excluídos',
-    'granularity' => 'Granularidade',
-    'compression' => 'Compressão',
-];
+
 ?>
 <main class="container py-5">
     <?= view('repositories/workflow', ['repository' => $repository, 'movements' => $movements]) ?>
@@ -49,23 +38,7 @@ $fields = [
         <?= view('repositories/summary', ['summary' => $summary, 'evaluationCounts' => $evaluationCounts, 'fillingTime' => $fillingTime, 'repositoryId' => (int) $repository['id']]) ?>
     </div>
     <div class="tab-pane fade <?= $evaluatorsActive ? '' : 'show active' ?>" id="repository-data" role="tabpanel" aria-labelledby="repository-data-tab" tabindex="0">
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h2 class="h4 mb-4">Dados do repositório</h2>
-            <dl class="row mb-0">
-                <dt class="col-md-4">Situação</dt><dd class="col-md-8"><?= esc($status) ?></dd>
-                <dt class="col-md-4">Tipo de repositório</dt><dd class="col-md-8"><?= esc($types[$type] ?? ($type !== '' ? $type : 'Não informado')) ?></dd>
-                <?php foreach ($fields as $field => $label): ?>
-                    <dt class="col-md-4"><?= esc($label) ?></dt>
-                    <dd class="col-md-8 text-break"><?= esc(($repository[$field] ?? '') !== '' && $repository[$field] !== null ? $repository[$field] : 'Não informado') ?></dd>
-                <?php endforeach; ?>
-                <?php foreach (['created_at' => 'Data de cadastro', 'updated_at' => 'Última movimentação', 'submitted_at' => 'Enviado em', 'seal_data_avaliation' => 'Avaliado em'] as $field => $label): ?>
-                    <dt class="col-md-4"><?= esc($label) ?></dt>
-                    <dd class="col-md-8"><?= !empty($repository[$field]) && $repository[$field] !== '0000-00-00 00:00:00' ? esc(date('d/m/Y H:i', strtotime($repository[$field]))) : 'Não informado' ?></dd>
-                <?php endforeach; ?>
-            </dl>
-        </div>
-    </div>
+    <?= view('repositories/data', compact('repository', 'status', 'types', 'type') + ['submitter' => $submitter ?? null]) ?>
     </div>
     <?php $tabIndex = 0; foreach ($criteriaGroups as $level => $questions): $tabIndex++; ?>
     <div class="tab-pane fade" id="criteria-<?= $tabIndex ?>" role="tabpanel" aria-labelledby="criteria-<?= $tabIndex ?>-tab" tabindex="0">

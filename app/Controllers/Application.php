@@ -217,7 +217,15 @@ class Application extends Controller
 
         $method = strtolower($this->request->getMethod());
 
-        if ($this->editingDenied((int) $id)) return $this->response->setStatusCode(403)->setBody('Este repositório não está disponível para edição.');
+        if ($this->editingDenied((int) $id)) {
+            $reason = !session('logged_in') ? 'login'
+                : (!empty($data['repo']['submitted_by']) && (int) $data['repo']['submitted_by'] !== (int) session('user_id') ? 'owner' : 'status');
+            return $this->response->setStatusCode(403)->setBody(view('application/edit_unavailable', ['reason' => $reason]));
+        }
+
+        // Opening a returned submission must replace any previously selected repository.
+        // Progress links and answer/evidence endpoints use this session identifier.
+        session()->set('repo_id', (int) $id);
 
         if ($method === 'post') {
             $OaiPmhModel = new \App\Models\Oai_pmh\OaiPmhModel();

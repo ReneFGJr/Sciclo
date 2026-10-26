@@ -103,6 +103,9 @@ class Repositories extends BaseController
             'availableEvaluators' => $availableEvaluators,
             'currentRound' => $currentRound,
             'repository' => $repository,
+            'submitter' => !empty($repository['submitted_by'])
+                ? (new \App\Models\UserModel())->select('id, name, email')->find((int) $repository['submitted_by'])
+                : null,
             'criteriaGroups' => $criteriaGroups,
             'answers' => $answers,
             'evidencesByQuestion' => $evidencesByQuestion,
